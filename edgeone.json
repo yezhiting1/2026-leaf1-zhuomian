@@ -1,0 +1,5 @@
+{
+  "installCommand": "pnpm approve-builds --all && pnpm install",
+  "buildCommand": "next build",
+  "nodeVersion": "22.11.0"
+}
