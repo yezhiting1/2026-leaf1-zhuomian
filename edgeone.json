@@ -1,5 +1,8 @@
-"scripts": {
-  "dev": "next dev",
-  "build": "next build",
-  "start": "next start"
+{
+  "name": "2026-leaf1-zhuomian",
+  "framework": "nextjs",
+  "installCommand": "pnpm install",
+  "buildCommand": "next build",
+  "outputDirectory": ".next",
+  "nodeVersion": "20"
 }
