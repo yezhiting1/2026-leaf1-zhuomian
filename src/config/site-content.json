@@ -45,17 +45,11 @@
 		{
 			"id": "github",
 			"type": "github",
-			"value": "https://github.com/yysuni",
+			"value": "https://github.com/yztcf",
 			"label": "Github",
 			"order": 3
 		},
-		{
-			"id": "juejin",
-			"type": "juejin",
-			"value": "https://juejin.cn/user/2427311675422382",
-			"label": "稀土掘金",
-			"order": 2
-		},
+		
 		{
 			"id": "email",
 			"type": "email",
