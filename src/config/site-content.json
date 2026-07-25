@@ -1,8 +1,8 @@
 {
 	"meta": {
-		"title": "YYsuni",
-		"description": "YYsuni 的个人博客，记录前端开发、探索、笔记。前端 UI 更新代码仓库。",
-		"username": "Suni"
+		"title": "Zhiting",
+		"description": "Zhiting 的个人博客，记录开发、探索、笔记。",
+		"username": "Zhiting"
 	},
 	"theme": {
 		"colorBrand": "#2fcbe7",
@@ -45,21 +45,21 @@
 		{
 			"id": "github",
 			"type": "github",
-			"value": "https://github.com/yysuni",
+			"value": "https://github.com/yztcf",
 			"label": "Github",
 			"order": 3
 		},
 		{
-			"id": "juejin",
-			"type": "juejin",
-			"value": "https://juejin.cn/user/2427311675422382",
-			"label": "稀土掘金",
+			"id": "gitee",
+			"type": "gitee",
+			"value": "https://gitee.com/yezhiting",
+			"label": "gitee",
 			"order": 2
 		},
 		{
 			"id": "email",
 			"type": "email",
-			"value": "yysuni1001@gmail.com",
+			"value": "1632866674@qq.com",
 			"label": "",
 			"order": 1
 		}
