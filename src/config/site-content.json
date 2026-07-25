@@ -49,13 +49,7 @@
 			"label": "Github",
 			"order": 3
 		},
-		{
-			"id": "gitee",
-			"type": "gitee",
-			"value": "https://gitee.com/yezhiting",
-			"label": "gitee",
-			"order": 2
-		},
+		
 		{
 			"id": "email",
 			"type": "email",
