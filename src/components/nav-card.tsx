@@ -25,12 +25,12 @@ import { useConfigStore } from '@/app/(home)/stores/config-store'
 import { HomeDraggableLayer } from '@/app/(home)/home-draggable-layer'
 
 const list = [
-	{
-		icon: ScrollOutlineSVG,
-		iconActive: ScrollFilledSVG,
-		label: '近期文章',
-		href: '/blog'
-	},
+	// {
+	// 	icon: ScrollOutlineSVG,
+	// 	iconActive: ScrollFilledSVG,
+	// 	label: '近期文章',
+	// 	href: '/blog'
+	// },
 	// {
 	// 	icon: ProjectsOutlineSVG,
 	// 	iconActive: ProjectsFilledSVG,
@@ -43,25 +43,49 @@ const list = [
 	// 	label: '关于网站',
 	// 	href: '/about'
 	// },
-	{
-		icon: ShareOutlineSVG,
-		iconActive: ShareFilledSVG,
-		label: '我的收藏',
-		href: '/share'
-	},
-	{
-		icon: AboutOutlineSVG,
-		iconActive: AboutFilledSVG,
-		label: '返回 Zhiting',
-		href: 'https://yztcf.de5.net/',
-		external: true
-	}
+	//  {
+	// 	icon: ShareOutlineSVG,
+	// 	iconActive: ShareFilledSVG,
+	// 	label: '我的收藏',
+	// 	href: '/share'
+	// },
 	// {
 	// 	icon: WebsiteOutlineSVG,
 	// 	iconActive: WebsiteFilledSVG,
 	// 	label: '优秀博客',
 	// 	href: '/bloggers'
 	// }
+	 {
+		icon: AboutOutlineSVG,
+		iconActive: AboutFilledSVG,
+		label: '返回首页',
+		href: 'https://yztcf.de5.net/',
+		external: true
+	},
+	{
+		icon: ScrollOutlineSVG,
+		iconActive: ScrollFilledSVG,
+		label: '近期文章',
+		href: '/blog'
+	},
+    {
+		icon: ShareOutlineSVG,
+		iconActive: ShareFilledSVG,
+		label: '我的收藏',
+		href: '/share'
+	},
+    {
+		icon: ProjectsOutlineSVG,
+		iconActive: ProjectsFilledSVG,
+		label: '作品集Vlog',
+		href: 'https://yztcf.de5.net.vlog.html/',
+		external: true
+	},
+	 {
+		icon: WebsiteOutlineSVG,
+		iconActive: WebsiteFilledSVG,
+		label: '我的OS',
+		href: '/bloggers'	}
 ]
 
 const extraSize = 8
