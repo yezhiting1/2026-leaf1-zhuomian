@@ -85,7 +85,7 @@ export default function Home() {
 {/* 原社交按钮Github+邮箱，注释隐藏 */}
 {/* {cardStyles.socialButtons?.enabled !== false && <SocialButtons />} */}
 {/* 替换为音乐卡片 */}
-                {true && <MusicCard />}
+               {cardStyles.musicCard?.enabled !== false && <MusicCard />}
 {/* 注释随机推荐ShareCard */}
 {/* {!maxSM && cardStyles.shareCard?.enabled !== false && <ShareCard />} */}
 {/* 注释掉最新文章模块*/}
