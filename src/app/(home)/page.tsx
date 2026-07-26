@@ -19,16 +19,7 @@ import { toast } from 'sonner'
 import ConfigDialog from './config-dialog/index'
 import { useEffect } from 'react'
 import SnowfallBackground from '@/layout/backgrounds/snowfall'
-import dynamic from 'next/dynamic'
-const MusicCard = dynamic(
-  () => import('@/components/music-card'),
-  { 
-    ssr: false,
-    loading: () => (
-      <div className="h-20 w-48 animate-pulse rounded-xl bg-gray-100" />
-    )
-  }
-)
+
 
 
 export default function Home() {
@@ -95,7 +86,7 @@ export default function Home() {
 {/* 原社交按钮Github+邮箱，注释隐藏 */}
 {/* {cardStyles.socialButtons?.enabled !== false && <SocialButtons />} */}
 {/* 替换为音乐卡片 */}
-               {cardStyles.musicCard?.enabled !== false && <MusicCard />}
+           
 {/* 注释随机推荐ShareCard */}
 {/* {!maxSM && cardStyles.shareCard?.enabled !== false && <ShareCard />} */}
 {/* 注释掉最新文章模块*/}
