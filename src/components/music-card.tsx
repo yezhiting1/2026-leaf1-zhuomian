@@ -19,16 +19,8 @@ export default function MusicCard() {
 	const pathname = usePathname()
 	const center = useCenterStore()
 	const { cardStyles, siteContent } = useConfigStore()
-	// const styles = cardStyles.musicCard
-	const styles = cardStyles.musicCard ?? {
-	width: 320,
-	height: 80,
-	offsetX: null,
-	offsetY: null,
-	offset: 0,
-	order: 0,
-	enabled: true
-}
+	const styles = cardStyles.musicCard
+	
 	const hiCardStyles = cardStyles.hiCard
 	const clockCardStyles = cardStyles.clockCard
 	const calendarCardStyles = cardStyles.calendarCard
