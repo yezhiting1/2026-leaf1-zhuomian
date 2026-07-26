@@ -19,6 +19,7 @@ import { toast } from 'sonner'
 import ConfigDialog from './config-dialog/index'
 import { useEffect } from 'react'
 import SnowfallBackground from '@/layout/backgrounds/snowfall'
+import MusicCard from '@/components/music-card'
 
 export default function Home() {
 	const { maxSM } = useSize()
@@ -84,11 +85,11 @@ export default function Home() {
 {/* 原社交按钮Github+邮箱，注释隐藏 */}
 {/* {cardStyles.socialButtons?.enabled !== false && <SocialButtons />} */}
 {/* 替换为音乐卡片 */}
-               
+                {cardStyles.musicCard?.enabled !== false && <MusicCard />}
 {/* 注释随机推荐ShareCard */}
 {/* {!maxSM && cardStyles.shareCard?.enabled !== false && <ShareCard />} */}
-{/* 注释掉最新文章模块
-{cardStyles.articleCard?.enabled !== false && <AritcleCard />} */}
+{/* 注释掉最新文章模块*/}
+{/*{cardStyles.articleCard?.enabled !== false && <AritcleCard />} */}
 				{!maxSM && cardStyles.writeButtons?.enabled !== false && <WriteButtons />}
 {/* 点赞按钮模块 */}
 {/* {cardStyles.likePosition?.enabled !== false && <LikePosition />} */}
