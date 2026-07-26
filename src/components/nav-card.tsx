@@ -78,14 +78,16 @@ const list = [
 		icon: ProjectsOutlineSVG,
 		iconActive: ProjectsFilledSVG,
 		label: '作品集Vlog',
-		href: 'https://yztcf.de5.net.vlog.html/',
+		href: 'https://yztcf.de5.net/vlog.html',
 		external: true
 	},
 	 {
 		icon: WebsiteOutlineSVG,
 		iconActive: WebsiteFilledSVG,
 		label: '我的OS',
-		href: '/bloggers'	}
+		href: 'https://blog5.yztcf.de5.net/',
+		external: true
+	 }
 ]
 
 const extraSize = 8
