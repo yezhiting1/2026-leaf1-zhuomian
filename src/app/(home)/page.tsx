@@ -19,7 +19,17 @@ import { toast } from 'sonner'
 import ConfigDialog from './config-dialog/index'
 import { useEffect } from 'react'
 import SnowfallBackground from '@/layout/backgrounds/snowfall'
-import MusicCard from '@/components/music-card'
+import dynamic from 'next/dynamic'
+const MusicCard = dynamic(
+  () => import('@/components/music-card'),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="h-20 w-48 animate-pulse rounded-xl bg-gray-100" />
+    )
+  }
+)
+
 
 export default function Home() {
 	const { maxSM } = useSize()
