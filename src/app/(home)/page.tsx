@@ -81,8 +81,10 @@ export default function Home() {
 				{cardStyles.hiCard?.enabled !== false && <HiCard />}
 				{!maxSM && cardStyles.clockCard?.enabled !== false && <ClockCard />}
 				{!maxSM && cardStyles.calendarCard?.enabled !== false && <CalendarCard />}
-				{cardStyles.socialButtons?.enabled !== false && <SocialButtons />}
-/* {cardStyles.socialButtons?.enabled !== false && <SocialButtons />} */
+{/* 原社交按钮Github+邮箱，注释隐藏 */}
+{/* {cardStyles.socialButtons?.enabled !== false && <SocialButtons />} */}
+{/* 替换为音乐卡片 */}
+               
 {/* 注释随机推荐ShareCard */}
 {/* {!maxSM && cardStyles.shareCard?.enabled !== false && <ShareCard />} */}
 {/* 注释掉最新文章模块
