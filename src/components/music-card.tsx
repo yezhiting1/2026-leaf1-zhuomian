@@ -3,11 +3,12 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import Card from '@/components/card'
 import { useCenterStore } from '@/hooks/use-center'
-import { useConfigStore } from '../app/(home)/stores/config-store'
+
 import { CARD_SPACING } from '@/consts'
 import MusicSVG from '@/svgs/music.svg'
 import PlaySVG from '@/svgs/play.svg'
-import { HomeDraggableLayer } from '../app/(home)/home-draggable-layer'
+import { useConfigStore } from '@/app/(home)/stores/config-store'
+import { HomeDraggableLayer } from '@/app/(home)/home-draggable-layer'
 import { Pause } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import clsx from 'clsx'
@@ -18,7 +19,16 @@ export default function MusicCard() {
 	const pathname = usePathname()
 	const center = useCenterStore()
 	const { cardStyles, siteContent } = useConfigStore()
-	const styles = cardStyles.musicCard
+	// const styles = cardStyles.musicCard
+	const styles = cardStyles.musicCard ?? {
+	width: 320,
+	height: 80,
+	offsetX: null,
+	offsetY: null,
+	offset: 0,
+	order: 0,
+	enabled: true
+}
 	const hiCardStyles = cardStyles.hiCard
 	const clockCardStyles = cardStyles.clockCard
 	const calendarCardStyles = cardStyles.calendarCard
