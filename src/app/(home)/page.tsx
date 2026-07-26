@@ -82,10 +82,14 @@ export default function Home() {
 				{!maxSM && cardStyles.clockCard?.enabled !== false && <ClockCard />}
 				{!maxSM && cardStyles.calendarCard?.enabled !== false && <CalendarCard />}
 				{cardStyles.socialButtons?.enabled !== false && <SocialButtons />}
-				{!maxSM && cardStyles.shareCard?.enabled !== false && <ShareCard />}
-				{cardStyles.articleCard?.enabled !== false && <AritcleCard />}
+/* {cardStyles.socialButtons?.enabled !== false && <SocialButtons />} */
+{/* 注释随机推荐ShareCard */}
+{/* {!maxSM && cardStyles.shareCard?.enabled !== false && <ShareCard />} */}
+{/* 注释掉最新文章模块
+{cardStyles.articleCard?.enabled !== false && <AritcleCard />} */}
 				{!maxSM && cardStyles.writeButtons?.enabled !== false && <WriteButtons />}
-				{cardStyles.likePosition?.enabled !== false && <LikePosition />}
+{/* 点赞按钮模块 */}
+{/* {cardStyles.likePosition?.enabled !== false && <LikePosition />} */}
 				{cardStyles.hatCard?.enabled !== false && <HatCard />}
 				{cardStyles.beianCard?.enabled !== false && <BeianCard />}
 			</div>
