@@ -40,15 +40,7 @@
 		"offsetY": null,
 		"enabled": true
 	  },
-	"socialButtons": {
-	"width": 293,
-		"height": 66,
-		"offset": 120,
-		"order": 6,
-		"offsetX": null,
-		"offsetY": null,
-		"enabled": false
-	},
+	
 	"shareCard": {
 		"width": 200,
 		"height": 180,
