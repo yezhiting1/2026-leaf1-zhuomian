@@ -33,17 +33,17 @@
 		"enabled": true
 	},
 	"musicCard": {
-		"width": 293,
-		"height": 66,
-		"offset": 120,
+			"width": 315,
+		"height": 48,
 		"order": 6,
 		"offsetX": null,
 		"offsetY": null,
 		"enabled": true
-	},
+	  },
 	"socialButtons": {
-		"width": 315,
-		"height": 48,
+	"width": 293,
+		"height": 66,
+		"offset": 120,
 		"order": 6,
 		"offsetX": null,
 		"offsetY": null,
