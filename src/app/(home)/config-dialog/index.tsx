@@ -18,9 +18,6 @@ interface ConfigDialogProps {
 
 type TabType = 'site' | 'color' | 'layout'
 
-// 🔥 密码
-const SAVE_PASSWORD = 'yzt'
-
 export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 	const { siteContent, setSiteContent, cardStyles, setCardStyles, regenerateBubbles } = useConfigStore()
 	const [formData, setFormData] = useState<SiteContent>(siteContent)
@@ -34,12 +31,6 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 	const [artImageUploads, setArtImageUploads] = useState<ArtImageUploads>({})
 	const [backgroundImageUploads, setBackgroundImageUploads] = useState<BackgroundImageUploads>({})
 	const [socialButtonImageUploads, setSocialButtonImageUploads] = useState<SocialButtonImageUploads>({})
-
-	// 🔥 密码弹窗状态
-	const [showPasswordDialog, setShowPasswordDialog] = useState(false)
-	const [password, setPassword] = useState('')
-	const [passwordError, setPasswordError] = useState('')
-	const passwordInputRef = useRef<HTMLInputElement>(null)
 
 	useEffect(() => {
 		if (open) {
@@ -55,9 +46,6 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 			setBackgroundImageUploads({})
 			setSocialButtonImageUploads({})
 			setActiveTab('site')
-			setShowPasswordDialog(false)
-			setPassword('')
-			setPasswordError('')
 		}
 	}, [open, siteContent, cardStyles])
 
@@ -87,43 +75,11 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 		}
 	}, [faviconItem, avatarItem, artImageUploads, backgroundImageUploads, socialButtonImageUploads])
 
-	// 🔥 点击保存 → 弹出密码框
+	// 🔥 直接保存，不需要密码
 	const handleSaveClick = () => {
-		setShowPasswordDialog(true)
-		setPassword('')
-		setPasswordError('')
-		setTimeout(() => {
-			passwordInputRef.current?.focus()
-		}, 100)
+		handleSave()
 	}
 
-	// 🔥 密码确认
-	const handlePasswordConfirm = () => {
-		if (password === SAVE_PASSWORD) {
-			setShowPasswordDialog(false)
-			setPassword('')
-			setPasswordError('')
-			handleSave()
-		} else {
-			setPasswordError('密码错误，请重试')
-			setPassword('')
-			passwordInputRef.current?.focus()
-		}
-	}
-
-	// 🔥 键盘事件
-	const handlePasswordKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-		if (e.key === 'Enter') {
-			handlePasswordConfirm()
-		}
-		if (e.key === 'Escape') {
-			setShowPasswordDialog(false)
-			setPassword('')
-			setPasswordError('')
-		}
-	}
-
-	// 🔥 保存 - 调用 pushSiteContent
 	const handleSave = async () => {
 		setIsSaving(true)
 		try {
@@ -202,9 +158,6 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 		setArtImageUploads({})
 		setBackgroundImageUploads({})
 		setSocialButtonImageUploads({})
-		setShowPasswordDialog(false)
-		setPassword('')
-		setPasswordError('')
 		onClose()
 	}
 
@@ -306,51 +259,9 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 						/>
 					)}
 					{activeTab === 'color' && <ColorConfig formData={formData} setFormData={setFormData} />}
-					{activeTab === 'layout' && <HomeLayout cardStylesData={cardStylesData} setCardStylesData={setCardStylesData} onClose={onClose} />}
+					{activeTab === 'layout' && <HomeLayout cardStylesData={cardStylesData} setCardStylesData={cardStylesData} onClose={onClose} />}
 				</div>
 			</DialogModal>
-
-			{/* 🔥 密码弹窗 */}
-			{showPasswordDialog && (
-				<div className='fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm'>
-					<div className='card w-[400px] p-6'>
-						<h3 className='mb-4 text-lg font-semibold'>请输入保存密码</h3>
-						<div className='mb-4'>
-							<input
-								ref={passwordInputRef}
-								type='password'
-								value={password}
-								onChange={(e) => setPassword(e.target.value)}
-								onKeyDown={handlePasswordKeyDown}
-								placeholder='请输入密码'
-								className='w-full rounded-lg border border-border bg-card px-4 py-2 text-sm outline-none transition-colors focus:border-brand'
-								autoFocus
-							/>
-							{passwordError && (
-								<p className='mt-2 text-sm text-red-500'>{passwordError}</p>
-							)}
-						</div>
-						<div className='flex justify-end gap-3'>
-							<button
-								onClick={() => {
-									setShowPasswordDialog(false)
-									setPassword('')
-									setPasswordError('')
-								}}
-								className='rounded-lg border border-border px-4 py-2 text-sm transition-colors hover:bg-secondary/10'
-							>
-								取消
-							</button>
-							<button
-								onClick={handlePasswordConfirm}
-								className='brand-btn px-6 py-2 text-sm'
-							>
-								确认保存
-							</button>
-						</div>
-					</div>
-				</div>
-			)}
 		</>
 	)
 }
