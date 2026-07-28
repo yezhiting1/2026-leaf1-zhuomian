@@ -19,6 +19,9 @@ interface ConfigDialogProps {
 
 type TabType = 'site' | 'color' | 'layout'
 
+// 固定的密码
+const SAVE_PASSWORD = 'yzt'
+
 export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 	const { isAuth, setPrivateKey } = useAuthStore()
 	const { siteContent, setSiteContent, cardStyles, setCardStyles, regenerateBubbles } = useConfigStore()
@@ -34,6 +37,14 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 	const [artImageUploads, setArtImageUploads] = useState<ArtImageUploads>({})
 	const [backgroundImageUploads, setBackgroundImageUploads] = useState<BackgroundImageUploads>({})
 	const [socialButtonImageUploads, setSocialButtonImageUploads] = useState<SocialButtonImageUploads>({})
+	
+	// 密码验证相关
+	const [showPasswordDialog, setShowPasswordDialog] = useState(false)
+	const [password, setPassword] = useState('')
+	const [passwordError, setPasswordError] = useState('')
+	const passwordInputRef = useRef<HTMLInputElement>(null)
+	// 标记是否已经通过密码验证
+	const [isPasswordVerified, setIsPasswordVerified] = useState(false)
 
 	useEffect(() => {
 		if (open) {
@@ -49,6 +60,11 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 			setBackgroundImageUploads({})
 			setSocialButtonImageUploads({})
 			setActiveTab('site')
+			// 重置密码状态
+			setShowPasswordDialog(false)
+			setPassword('')
+			setPasswordError('')
+			setIsPasswordVerified(false)
 		}
 	}, [open, siteContent, cardStyles])
 
@@ -83,6 +99,7 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 		try {
 			const text = await file.text()
 			setPrivateKey(text)
+			// 密钥导入后直接执行保存
 			await handleSave()
 		} catch (error) {
 			console.error('Failed to read private key:', error)
@@ -91,8 +108,41 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 	}
 
 	const handleSaveClick = () => {
-		// 直接调用保存，绕过密钥检查
-		handleSave()
+		// 显示密码对话框
+		setShowPasswordDialog(true)
+		setPassword('')
+		setPasswordError('')
+		setIsPasswordVerified(false)
+		setTimeout(() => {
+			passwordInputRef.current?.focus()
+		}, 100)
+	}
+
+	const handlePasswordConfirm = () => {
+		if (password === SAVE_PASSWORD) {
+			// 密码正确，标记已验证
+			setIsPasswordVerified(true)
+			setShowPasswordDialog(false)
+			setPassword('')
+			setPasswordError('')
+			// 执行保存
+			handleSave()
+		} else {
+			setPasswordError('密码错误，请重试')
+			setPassword('')
+			passwordInputRef.current?.focus()
+		}
+	}
+
+	const handlePasswordKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+		if (e.key === 'Enter') {
+			handlePasswordConfirm()
+		}
+		if (e.key === 'Escape') {
+			setShowPasswordDialog(false)
+			setPassword('')
+			setPasswordError('')
+		}
 	}
 
 	const handleSave = async () => {
@@ -108,23 +158,20 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 			const currentBackgroundImages = formData.backgroundImages ?? []
 			const removedBackgroundImages = originalBackgroundImages.filter(orig => !currentBackgroundImages.some(current => current.id === orig.id))
 
-			// 如果有认证，正常推送；否则只保存到本地
-			if (isAuth) {
-				await pushSiteContent(
-					formData,
-					cardStylesData,
-					faviconItem,
-					avatarItem,
-					artImageUploads,
-					removedArtImages,
-					backgroundImageUploads,
-					removedBackgroundImages,
-					socialButtonImageUploads
-				)
-			} else {
-				// 无密钥模式：仅本地保存，不推送
-				console.log('无密钥模式：仅本地保存配置')
-			}
+			// 只要有密码验证通过，就执行推送
+			// 注意：这里需要确保 pushSiteContent 内部不依赖 isAuth
+			// 如果 pushSiteContent 内部依赖 isAuth，需要修改 pushSiteContent 支持密码验证
+			await pushSiteContent(
+				formData,
+				cardStylesData,
+				faviconItem,
+				avatarItem,
+				artImageUploads,
+				removedArtImages,
+				backgroundImageUploads,
+				removedBackgroundImages,
+				socialButtonImageUploads
+			)
 			
 			setSiteContent(formData)
 			setCardStyles(cardStylesData)
@@ -135,12 +182,14 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 			setBackgroundImageUploads({})
 			setSocialButtonImageUploads({})
 			onClose()
-			toast.success(isAuth ? '保存成功' : '本地保存成功')
+			toast.success('保存成功')
 		} catch (error: any) {
 			console.error('Failed to save:', error)
 			toast.error(`保存失败: ${error?.message || '未知错误'}`)
 		} finally {
 			setIsSaving(false)
+			// 重置密码验证状态
+			setIsPasswordVerified(false)
 		}
 	}
 
@@ -185,6 +234,10 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 		setArtImageUploads({})
 		setBackgroundImageUploads({})
 		setSocialButtonImageUploads({})
+		setShowPasswordDialog(false)
+		setPassword('')
+		setPasswordError('')
+		setIsPasswordVerified(false)
 		onClose()
 	}
 
@@ -224,7 +277,7 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 		onClose()
 	}
 
-	const buttonText = isAuth ? '保存' : '本地保存'
+	const buttonText = '保存'
 
 	const tabs: { id: TabType; label: string }[] = [
 		{ id: 'site', label: '网站设置' },
@@ -304,6 +357,48 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 					{activeTab === 'layout' && <HomeLayout cardStylesData={cardStylesData} setCardStylesData={setCardStylesData} onClose={onClose} />}
 				</div>
 			</DialogModal>
+
+			{/* 密码验证弹窗 */}
+			{showPasswordDialog && (
+				<div className='fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm'>
+					<div className='card w-[400px] p-6'>
+						<h3 className='mb-4 text-lg font-semibold'>请输入保存密码</h3>
+						<div className='mb-4'>
+							<input
+								ref={passwordInputRef}
+								type='password'
+								value={password}
+								onChange={(e) => setPassword(e.target.value)}
+								onKeyDown={handlePasswordKeyDown}
+								placeholder='请输入密码'
+								className='w-full rounded-lg border border-border bg-card px-4 py-2 text-sm outline-none transition-colors focus:border-brand'
+								autoFocus
+							/>
+							{passwordError && (
+								<p className='mt-2 text-sm text-red-500'>{passwordError}</p>
+							)}
+						</div>
+						<div className='flex justify-end gap-3'>
+							<button
+								onClick={() => {
+									setShowPasswordDialog(false)
+									setPassword('')
+									setPasswordError('')
+								}}
+								className='rounded-lg border border-border px-4 py-2 text-sm transition-colors hover:bg-secondary/10'
+							>
+								取消
+							</button>
+							<button
+								onClick={handlePasswordConfirm}
+								className='brand-btn px-6 py-2 text-sm'
+							>
+								确认保存
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
 		</>
 	)
 }
