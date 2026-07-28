@@ -50,7 +50,7 @@
 			"type": "github",
 			"value": "https://github.com/yztcf",
 			"label": "Github",
-			"order": 3
+			"order": 2
 		},
 		{
 			"id": "email",
@@ -58,6 +58,20 @@
 			"value": "1632866674@qq.com",
 			"label": "",
 			"order": 1
+		},
+		{
+			"id": "button-1785243588156",
+			"type": "qq",
+			"value": "/images/social-buttons/9cfbd31f6336d74e.jpg",
+			"label": "",
+			"order": 4
+		},
+		{
+			"id": "button-1785243626311",
+			"type": "wechat",
+			"value": "/images/social-buttons/110ccbc6a3e07cd7.jpg",
+			"label": "",
+			"order": 4
 		}
 	],
 	"clockShowSeconds": false,
