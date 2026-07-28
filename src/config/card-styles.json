@@ -32,13 +32,21 @@
 		"offsetY": null,
 		"enabled": true
 	},
+	"SocialButtons":{
+   "width": 360,
+	"height": 320,
+    "order": 6.5,
+    "offsetX":null,
+    "offsetY":null,
+    "enabled": true
+},
 	"musicCard": {
    "width": 360,
 	"height": 320,
     "order": 6,
     "offsetX":null,
     "offsetY":null,
-    "enabled":  false
+    "enabled": true
 },
 	
 	"shareCard": {
