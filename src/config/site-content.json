@@ -49,7 +49,6 @@
 			"label": "Github",
 			"order": 3
 		},
-		
 		{
 			"id": "email",
 			"type": "email",
