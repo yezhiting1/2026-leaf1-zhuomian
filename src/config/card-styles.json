@@ -38,7 +38,7 @@
     "order": 1.5,
     "offsetX":null,
     "offsetY":null,
-    "enabled":   true
+    "enabled":  false
 },
 	
 	"shareCard": {
