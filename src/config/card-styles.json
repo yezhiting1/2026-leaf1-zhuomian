@@ -36,8 +36,8 @@
     "width": 360,
     "height": 100,
     "order": 6,
-    "offsetX": 400,
-    "offsetY": 320,
+    "offsetX": "50%",
+    "offsetY": 200,
     "enabled": true
 },
 	
