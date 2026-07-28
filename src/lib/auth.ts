@@ -37,24 +37,29 @@ export async function getAuthToken(): Promise<string> {
     // 1. 先尝试从缓存获取
     const cachedToken = getTokenFromCache()
     if (cachedToken) {
+        console.log('🔍 使用缓存的 Token:', cachedToken.slice(0, 10) + '...')
         return cachedToken
     }
 
     // 2. 🔥 通过 API 获取 Token（安全，不暴露）
     try {
+        console.log('🔍 正在通过 API 获取 Token...')
         const response = await fetch('/api/github-token')
+        const data = await response.json()
+        console.log('🔍 API 返回:', data)
+        
         if (!response.ok) {
-            const data = await response.json()
             throw new Error(data.error || 'GITHUB_TOKEN not set')
         }
-        const data = await response.json()
+        
         const token = data.token
+        console.log('🔍 获取到 Token:', token.slice(0, 10) + '...')
 
         // 缓存 token
         saveTokenToCache(token)
         return token
     } catch (error) {
-        console.error('获取 GitHub Token 失败:', error)
+        console.error('❌ 获取 GitHub Token 失败:', error)
         throw new Error('请在腾讯云环境变量中设置 GITHUB_TOKEN')
     }
 }
