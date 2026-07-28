@@ -1,130 +1,309 @@
-import { useState } from 'react'
-import { toast } from 'react-toastify'
-import { pushSiteContent } from '@/services/pushSiteContent'
+'use client'
 
-// 自定义保存密码
-const SAVE_PASSWORD = 'Zhiting'
+import { useState, useRef, useEffect } from 'react'
+import { motion } from 'motion/react'
+import { toast } from 'sonner'
+import { DialogModal } from '@/components/dialog-modal'
+import { useAuthStore } from '@/hooks/use-auth'
+import { useConfigStore } from '../stores/config-store'
+import { pushSiteContent } from '../services/push-site-content'
+import type { SiteContent, CardStyles } from '../stores/config-store'
+import { SiteSettings, type FileItem, type ArtImageUploads, type BackgroundImageUploads, type SocialButtonImageUploads } from './site-settings'
+import { ColorConfig } from './color-config'
+import { HomeLayout } from './home-layout'
 
-export default function ConfigIndex() {
-  // 密码弹窗状态
-  const [showPwdModal, setShowPwdModal] = useState(false)
-  const [inputPwd, setInputPwd] = useState('')
-  // 页面临时授权标记，仅当前页面生命周期生效
-  const [tempAuth, setTempAuth] = useState(false)
-
-  // 底部保存按钮点击事件
-  const handleSaveClick = () => {
-    if (!tempAuth) {
-      // 未验证密码，弹出密码框
-      setShowPwdModal(true)
-      setInputPwd('')
-      return
-    }
-    // 已验证密码，直接执行保存
-    handleSubmitSave()
-  }
-
-  // 密码校验函数
-  const checkPwdAndSave = () => {
-    const pwd = inputPwd.trim()
-    if (pwd !== SAVE_PASSWORD) {
-      toast.error('密码错误，请重新输入')
-      setInputPwd('')
-      return
-    }
-    // 密码正确，标记临时放行
-    setTempAuth(true)
-    setShowPwdModal(false)
-    setInputPwd('')
-    handleSubmitSave()
-  }
-
-  // 真实提交保存逻辑，临时填充假密钥绕过接口校验
-  const handleSubmitSave = async () => {
-    try {
-      // 临时给全局填充假密钥，骗过接口私钥判断
-      const authStore = useAuthStore()
-      authStore.setPrivateKey('dummy_no_key')
-
-      // ========== 替换为你项目真实表单数据 ==========
-      const formData = {
-        title: '网站标题',
-        theme: 'light',
-        logo: ''
-      }
-      await pushSiteContent(formData)
-      toast.success('配置保存成功！')
-    } catch (err) {
-      console.error('保存失败：', err)
-      toast.error(`保存失败: ${err.message}`)
-    } finally {
-      // 保存完成清空假密钥，下次打开页面需要重新输入密码
-      const authStore = useAuthStore()
-      authStore.setPrivateKey('')
-      setTempAuth(false)
-    }
-  }
-
-  return (
-    <div className="config-page">
-      {/* 你的原有配置表单区域 */}
-      <div className="form-content">
-        <p>网站配置表单区域</p>
-      </div>
-
-      {/* 底部保存按钮 */}
-      <button onClick={handleSaveClick}>保存配置</button>
-
-      {/* 密码弹窗 */}
-      {showPwdModal && (
-        <div className="pwd-mask">
-          <div className="pwd-box">
-            <h4>请输入保存密码</h4>
-            <input
-              value={inputPwd}
-              onChange={(e) => setInputPwd(e.target.value)}
-              type="password"
-              placeholder="输入密码"
-              onKeyDown={(e) => e.key === 'Enter' && checkPwdAndSave()}
-            />
-            <div className="btn-group">
-              <button onClick={() => setShowPwdModal(false)}>取消</button>
-              <button onClick={checkPwdAndSave}>确认保存</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <style jsx>{`
-        .pwd-mask {
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,0.6);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .pwd-box {
-          background: #fff;
-          padding: 24px;
-          border-radius: 8px;
-          width: 360px;
-        }
-        input {
-          width: 100%;
-          padding: 8px 12px;
-          margin: 12px 0;
-          box-sizing: border-box;
-        }
-        .btn-group {
-          display: flex;
-          gap: 12px;
-          justify-content: flex-end;
-        }
-      `}</style>
-    </div>
-  )
+interface ConfigDialogProps {
+	open: boolean
+	onClose: () => void
 }
 
-// 引入auth仓库（仅页面内临时调用，无需修改仓库文件）
-import { useAuthStore } from '@/stores/auth'
+type TabType = 'site' | 'color' | 'layout'
+
+export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
+	const { isAuth, setPrivateKey } = useAuthStore()
+	const { siteContent, setSiteContent, cardStyles, setCardStyles, regenerateBubbles } = useConfigStore()
+	const [formData, setFormData] = useState<SiteContent>(siteContent)
+	const [cardStylesData, setCardStylesData] = useState<CardStyles>(cardStyles)
+	const [originalData, setOriginalData] = useState<SiteContent>(siteContent)
+	const [originalCardStyles, setOriginalCardStyles] = useState<CardStyles>(cardStyles)
+	const [isSaving, setIsSaving] = useState(false)
+	const [activeTab, setActiveTab] = useState<TabType>('site')
+	const keyInputRef = useRef<HTMLInputElement>(null)
+	const [faviconItem, setFaviconItem] = useState<FileItem | null>(null)
+	const [avatarItem, setAvatarItem] = useState<FileItem | null>(null)
+	const [artImageUploads, setArtImageUploads] = useState<ArtImageUploads>({})
+	const [backgroundImageUploads, setBackgroundImageUploads] = useState<BackgroundImageUploads>({})
+	const [socialButtonImageUploads, setSocialButtonImageUploads] = useState<SocialButtonImageUploads>({})
+
+	useEffect(() => {
+		if (open) {
+			const current = { ...siteContent }
+			const currentCardStyles = { ...cardStyles }
+			setFormData(current)
+			setCardStylesData(currentCardStyles)
+			setOriginalData(current)
+			setOriginalCardStyles(currentCardStyles)
+			setFaviconItem(null)
+			setAvatarItem(null)
+			setArtImageUploads({})
+			setBackgroundImageUploads({})
+			setSocialButtonImageUploads({})
+			setActiveTab('site')
+		}
+	}, [open, siteContent, cardStyles])
+
+	useEffect(() => {
+		return () => {
+			// Clean up preview URLs on unmount
+			if (faviconItem?.type === 'file') {
+				URL.revokeObjectURL(faviconItem.previewUrl)
+			}
+			if (avatarItem?.type === 'file') {
+				URL.revokeObjectURL(avatarItem.previewUrl)
+			}
+			Object.values(artImageUploads).forEach(item => {
+				if (item.type === 'file') {
+					URL.revokeObjectURL(item.previewUrl)
+				}
+			})
+			Object.values(backgroundImageUploads).forEach(item => {
+				if (item.type === 'file') {
+					URL.revokeObjectURL(item.previewUrl)
+				}
+			})
+			Object.values(socialButtonImageUploads).forEach(item => {
+				if (item.type === 'file') {
+					URL.revokeObjectURL(item.previewUrl)
+				}
+			})
+		}
+	}, [faviconItem, avatarItem, artImageUploads, backgroundImageUploads, socialButtonImageUploads])
+
+	const handleChoosePrivateKey = async (file: File) => {
+		try {
+			const text = await file.text()
+			setPrivateKey(text)
+			await handleSave()
+		} catch (error) {
+			console.error('Failed to read private key:', error)
+			toast.error('读取密钥文件失败')
+		}
+	}
+
+	const handleSaveClick = () => {
+		// 直接调用保存，绕过密钥检查
+		handleSave()
+	}
+
+	const handleSave = async () => {
+		setIsSaving(true)
+		try {
+			// Calculate removed art images so that we can delete files in repo
+			const originalArtImages = originalData.artImages ?? []
+			const currentArtImages = formData.artImages ?? []
+			const removedArtImages = originalArtImages.filter(orig => !currentArtImages.some(current => current.id === orig.id))
+
+			// Calculate removed background images
+			const originalBackgroundImages = originalData.backgroundImages ?? []
+			const currentBackgroundImages = formData.backgroundImages ?? []
+			const removedBackgroundImages = originalBackgroundImages.filter(orig => !currentBackgroundImages.some(current => current.id === orig.id))
+
+			// 如果有认证，正常推送；否则只保存到本地
+			if (isAuth) {
+				await pushSiteContent(
+					formData,
+					cardStylesData,
+					faviconItem,
+					avatarItem,
+					artImageUploads,
+					removedArtImages,
+					backgroundImageUploads,
+					removedBackgroundImages,
+					socialButtonImageUploads
+				)
+			} else {
+				// 无密钥模式：仅本地保存，不推送
+				console.log('无密钥模式：仅本地保存配置')
+			}
+			
+			setSiteContent(formData)
+			setCardStyles(cardStylesData)
+			updateThemeVariables(formData.theme)
+			setFaviconItem(null)
+			setAvatarItem(null)
+			setArtImageUploads({})
+			setBackgroundImageUploads({})
+			setSocialButtonImageUploads({})
+			onClose()
+			toast.success(isAuth ? '保存成功' : '本地保存成功')
+		} catch (error: any) {
+			console.error('Failed to save:', error)
+			toast.error(`保存失败: ${error?.message || '未知错误'}`)
+		} finally {
+			setIsSaving(false)
+		}
+	}
+
+	const handleCancel = () => {
+		// Clean up preview URLs
+		if (faviconItem?.type === 'file') {
+			URL.revokeObjectURL(faviconItem.previewUrl)
+		}
+		if (avatarItem?.type === 'file') {
+			URL.revokeObjectURL(avatarItem.previewUrl)
+		}
+		Object.values(artImageUploads).forEach(item => {
+			if (item.type === 'file') {
+				URL.revokeObjectURL(item.previewUrl)
+			}
+		})
+		Object.values(backgroundImageUploads).forEach(item => {
+			if (item.type === 'file') {
+				URL.revokeObjectURL(item.previewUrl)
+			}
+		})
+		Object.values(socialButtonImageUploads).forEach(item => {
+			if (item.type === 'file') {
+				URL.revokeObjectURL(item.previewUrl)
+			}
+		})
+		// Restore to the state when dialog was opened
+		setSiteContent(originalData)
+		setCardStyles(originalCardStyles)
+		regenerateBubbles()
+		// Restore document title and meta if they were changed by preview
+		if (typeof document !== 'undefined') {
+			document.title = originalData.meta.title
+			const metaDescription = document.querySelector('meta[name="description"]')
+			if (metaDescription) {
+				metaDescription.setAttribute('content', originalData.meta.description)
+			}
+		}
+		updateThemeVariables(originalData.theme)
+		setFaviconItem(null)
+		setAvatarItem(null)
+		setArtImageUploads({})
+		setBackgroundImageUploads({})
+		setSocialButtonImageUploads({})
+		onClose()
+	}
+
+	const updateThemeVariables = (theme?: SiteContent['theme']) => {
+		if (typeof document === 'undefined' || !theme) return
+
+		const { colorBrand, colorBrandSecondary, colorPrimary, colorSecondary, colorBg, colorBorder, colorCard, colorArticle } = theme
+
+		const root = document.documentElement
+
+		if (colorBrand) root.style.setProperty('--color-brand', colorBrand)
+		if (colorBrandSecondary) root.style.setProperty('--color-brand-secondary', colorBrandSecondary)
+		if (colorPrimary) root.style.setProperty('--color-primary', colorPrimary)
+		if (colorSecondary) root.style.setProperty('--color-secondary', colorSecondary)
+		if (colorBg) root.style.setProperty('--color-bg', colorBg)
+		if (colorBorder) root.style.setProperty('--color-border', colorBorder)
+		if (colorCard) root.style.setProperty('--color-card', colorCard)
+		if (colorArticle) root.style.setProperty('--color-article', colorArticle)
+	}
+
+	const handlePreview = () => {
+		console.log('formData', formData)
+		setSiteContent(formData)
+		setCardStyles(cardStylesData)
+		regenerateBubbles()
+
+		// Update document title
+		if (typeof document !== 'undefined') {
+			document.title = formData.meta.title
+			const metaDescription = document.querySelector('meta[name="description"]')
+			if (metaDescription) {
+				metaDescription.setAttribute('content', formData.meta.description)
+			}
+		}
+		updateThemeVariables(formData.theme)
+
+		onClose()
+	}
+
+	const buttonText = isAuth ? '保存' : '本地保存'
+
+	const tabs: { id: TabType; label: string }[] = [
+		{ id: 'site', label: '网站设置' },
+		{ id: 'color', label: '色彩配置' },
+		{ id: 'layout', label: '首页布局' }
+	]
+
+	return (
+		<>
+			<input
+				ref={keyInputRef}
+				type='file'
+				accept='.pem'
+				className='hidden'
+				onChange={async e => {
+					const f = e.target.files?.[0]
+					if (f) await handleChoosePrivateKey(f)
+					if (e.currentTarget) e.currentTarget.value = ''
+				}}
+			/>
+
+			<DialogModal open={open} onClose={handleCancel} className='card scrollbar-none max-h-[90vh] min-h-[600px] w-[640px] overflow-y-auto'>
+				<div className='mb-6 flex items-center justify-between'>
+					<div className='flex gap-1'>
+						{tabs.map(tab => (
+							<button
+								key={tab.id}
+								onClick={() => setActiveTab(tab.id)}
+								className={`relative px-4 py-2 text-sm font-medium transition-colors ${
+									activeTab === tab.id ? 'text-brand' : 'text-secondary hover:text-primary'
+								}`}>
+								{tab.label}
+								{activeTab === tab.id && <div className='bg-brand absolute right-0 bottom-0 left-0 h-0.5' />}
+							</button>
+						))}
+					</div>
+					<div className='flex gap-3'>
+						<motion.button
+							whileHover={{ scale: 1.05 }}
+							whileTap={{ scale: 0.95 }}
+							onClick={handlePreview}
+							className='bg-card rounded-xl border px-6 py-2 text-sm'>
+							预览
+						</motion.button>
+						<motion.button
+							whileHover={{ scale: 1.05 }}
+							whileTap={{ scale: 0.95 }}
+							onClick={handleCancel}
+							disabled={isSaving}
+							className='bg-card rounded-xl border px-6 py-2 text-sm'>
+							取消
+						</motion.button>
+						<motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={handleSaveClick} disabled={isSaving} className='brand-btn px-6'>
+							{isSaving ? '保存中...' : buttonText}
+						</motion.button>
+					</div>
+				</div>
+
+				<div className='min-h-[200px]'>
+					{activeTab === 'site' && (
+						<SiteSettings
+							formData={formData}
+							setFormData={setFormData}
+							faviconItem={faviconItem}
+							setFaviconItem={setFaviconItem}
+							avatarItem={avatarItem}
+							setAvatarItem={setAvatarItem}
+							artImageUploads={artImageUploads}
+							setArtImageUploads={setArtImageUploads}
+							backgroundImageUploads={backgroundImageUploads}
+							setBackgroundImageUploads={setBackgroundImageUploads}
+							socialButtonImageUploads={socialButtonImageUploads}
+							setSocialButtonImageUploads={setSocialButtonImageUploads}
+						/>
+					)}
+					{activeTab === 'color' && <ColorConfig formData={formData} setFormData={setFormData} />}
+					{activeTab === 'layout' && <HomeLayout cardStylesData={cardStylesData} setCardStylesData={setCardStylesData} onClose={onClose} />}
+				</div>
+			</DialogModal>
+		</>
+	)
+}
