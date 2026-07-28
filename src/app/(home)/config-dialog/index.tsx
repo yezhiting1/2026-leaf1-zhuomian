@@ -35,6 +35,8 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 	// 新增密码输入状态
 	const [inputPassword, setInputPassword] = useState("")
 	const [showPasswordInput, setShowPasswordInput] = useState(false)
+	// 临时授权标记（本次弹窗有效，不写入全局密钥）
+	const [tempAuth, setTempAuth] = useState(false)
 
 	const [faviconItem, setFaviconItem] = useState<FileItem | null>(null)
 	const [avatarItem, setAvatarItem] = useState<FileItem | null>(null)
@@ -56,9 +58,10 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 			setBackgroundImageUploads({})
 			setSocialButtonImageUploads({})
 			setActiveTab('site')
-			// 弹窗打开重置密码输入框
+			// 弹窗打开重置密码输入框与临时授权
 			setInputPassword("")
 			setShowPasswordInput(false)
+			setTempAuth(false)
 		}
 	}, [open, siteContent, cardStyles])
 
@@ -72,23 +75,25 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 		}
 	}, [faviconItem, avatarItem, artImageUploads, backgroundImageUploads, socialButtonImageUploads])
 
-	// 原读取pem文件逻辑删除，替换为密码校验函数
+	// 密码校验函数，移除错误setPrivateKey
 	const checkPasswordAndSave = () => {
 		if (inputPassword.trim() !== SAVE_PASSWORD) {
 			toast.error("密码错误，请重新输入")
 			return
 		}
-		// 密码正确，标记已授权并执行保存
-		setPrivateKey("authorized")
+		// 临时授权，直接执行保存
+		setTempAuth(true)
+		setShowPasswordInput(false)
 		handleSave()
 	}
 
 	const handleSaveClick = () => {
-		if (!isAuth) {
-			// 未授权时展示密码输入框
-			setShowPasswordInput(true)
-		} else {
+		// 全局已授权 或 本次弹窗密码验证通过，直接保存
+		if (isAuth || tempAuth) {
 			handleSave()
+		} else {
+			// 未授权展示密码输入框
+			setShowPasswordInput(true)
 		}
 	}
 
@@ -156,6 +161,7 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 		setSocialButtonImageUploads({})
 		setInputPassword("")
 		setShowPasswordInput(false)
+		setTempAuth(false)
 		onClose()
 	}
 
@@ -186,7 +192,8 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 		onClose()
 	}
 
-	const buttonText = isAuth ? '保存' : '导入密钥'
+	// 按钮文字区分全局授权状态
+	const buttonText = isAuth ? '保存' : tempAuth ? '保存' : '导入密钥'
 
 	const tabs: { id: TabType; label: string }[] = [
 		{ id: 'site', label: '网站设置' },
@@ -235,9 +242,15 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 					</div>
 				</div>
 
-				{/* 新增密码输入弹窗/输入框 */}
+				{/* 修复：密码框包裹form，自动回车提交，移除多余onKeyDown */}
 				{showPasswordInput && (
-					<div className='mb-4 p-4 border rounded-lg bg-card'>
+					<form 
+						onSubmit={(e) => {
+							e.preventDefault()
+							checkPasswordAndSave()
+						}}
+						className='mb-4 p-4 border rounded-lg bg-card'
+					>
 						<p className='mb-2 text-sm text-secondary'>请输入保存密码</p>
 						<div className='flex gap-2'>
 							<input
@@ -246,16 +259,12 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 								onChange={(e) => setInputPassword(e.target.value)}
 								className='flex-1 px-3 py-2 rounded border bg-bg'
 								placeholder='输入密码'
-								onKeyDown={(e) => e.key === 'Enter' && checkPasswordAndSave()}
 							/>
-							<button
-								onClick={checkPasswordAndSave}
-								className='brand-btn px-4 py-2 text-sm'
-							>
+							<button type="submit" className='brand-btn px-4 py-2 text-sm'>
 								确认保存
 							</button>
 						</div>
-					</div>
+					</form>
 				)}
 
 				<div className='min-h-[200px]'>
