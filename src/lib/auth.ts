@@ -40,16 +40,21 @@ export async function getAuthToken(): Promise<string> {
         return cachedToken
     }
 
-    // 2. 🔥 通过内部 API 获取（利用 Next.js 服务端能力）
-    // 在客户端请求时，Next.js 会自动处理，不会暴露 Token
-    const response = await fetch('/api/github-token')
-    if (!response.ok) {
-        throw new Error('GITHUB_TOKEN not set')
-    }
-    const data = await response.json()
-    const token = data.token
+    // 2. 🔥 通过 API 获取 Token（安全，不暴露）
+    try {
+        const response = await fetch('/api/github-token')
+        if (!response.ok) {
+            const data = await response.json()
+            throw new Error(data.error || 'GITHUB_TOKEN not set')
+        }
+        const data = await response.json()
+        const token = data.token
 
-    // 缓存 token
-    saveTokenToCache(token)
-    return token
+        // 缓存 token
+        saveTokenToCache(token)
+        return token
+    } catch (error) {
+        console.error('获取 GitHub Token 失败:', error)
+        throw new Error('请在腾讯云环境变量中设置 GITHUB_TOKEN')
+    }
 }
