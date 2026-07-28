@@ -33,12 +33,12 @@
 		"enabled": true
 	},
 	"musicCard": {
-    "width": "auto",
+    "width":100,
     "height": 56,
-    "order": 6,
-    "offsetX": null,
-    "offsetY": null,
-    "enabled":  false
+    "order": 1.5,
+    "offsetX": 120,
+    "offsetY": 210,
+    "enabled":   true
    
 }
 	
