@@ -32,7 +32,7 @@ export function signAppJwt(appId: string, privateKeyPem: string): string {
 }
 
 export async function getInstallationId(jwt: string, owner: string, repo: string): Promise<number> {
-	const res = await fetch(`${GH_API}/repos/${owner}/${repo}/installation`, {
+	const res = await fetch(`${GH_API}/repos/${owner}/${repo}/git/refs/${ref}`, {
 		headers: {
 			Authorization: `Bearer ${jwt}`,
 			Accept: 'application/vnd.github+json',
