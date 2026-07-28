@@ -20,8 +20,6 @@ import ConfigDialog from './config-dialog/index'
 import { useEffect } from 'react'
 import SnowfallBackground from '@/layout/backgrounds/snowfall'
 
-
-
 export default function Home() {
 	const { maxSM } = useSize()
 	const { cardStyles, configDialogOpen, setConfigDialogOpen, siteContent } = useConfigStore()
@@ -83,15 +81,11 @@ export default function Home() {
 				{cardStyles.hiCard?.enabled !== false && <HiCard />}
 				{!maxSM && cardStyles.clockCard?.enabled !== false && <ClockCard />}
 				{!maxSM && cardStyles.calendarCard?.enabled !== false && <CalendarCard />}
-
-           {cardStyles.socialButtons?.enabled !== false && <SocialButtons />} 
-{/* 替换为音乐卡片 */}
-           
- {!maxSM && cardStyles.shareCard?.enabled !== false && <ShareCard />}
-{/* 注释掉最新文章模块*/}
-{cardStyles.articleCard?.enabled !== false && <AritcleCard />}
+				{cardStyles.socialButtons?.enabled !== false && <SocialButtons />}
+				{!maxSM && cardStyles.shareCard?.enabled !== false && <ShareCard />}
+				{cardStyles.articleCard?.enabled !== false && <AritcleCard />}
 				{!maxSM && cardStyles.writeButtons?.enabled !== false && <WriteButtons />}
- {cardStyles.likePosition?.enabled !== false && <LikePosition />}
+				{cardStyles.likePosition?.enabled !== false && <LikePosition />}
 				{cardStyles.hatCard?.enabled !== false && <HatCard />}
 				{cardStyles.beianCard?.enabled !== false && <BeianCard />}
 			</div>
