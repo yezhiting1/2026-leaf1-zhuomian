@@ -226,7 +226,8 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 		onClose()
 	}
 
-	const buttonText = isAuth ? '保存' : '导入密钥'
+	// const buttonText = isAuth ? '保存' : '导入密钥'
+    const buttonText = '保存'
 
 	const tabs: { id: TabType; label: string }[] = [
 		{ id: 'site', label: '网站设置' },
