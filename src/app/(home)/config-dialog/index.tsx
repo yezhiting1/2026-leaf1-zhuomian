@@ -6,7 +6,8 @@ import { toast } from 'sonner'
 import { DialogModal } from '@/components/dialog-modal'
 import { useAuthStore } from '@/hooks/use-auth'
 import { useConfigStore } from '../stores/config-store'
-import { pushSiteContent } from '../services/push-site-content'
+// 🔥 注释掉 pushSiteContent 的导入
+// import { pushSiteContent } from '../services/push-site-content'
 import type { SiteContent, CardStyles } from '../stores/config-store'
 import { SiteSettings, type FileItem, type ArtImageUploads, type BackgroundImageUploads, type SocialButtonImageUploads } from './site-settings'
 import { ColorConfig } from './color-config'
@@ -90,45 +91,27 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 		}
 	}
 
-	// const handleSaveClick = () => {
-	// 	if (!isAuth) {
-	// 		keyInputRef.current?.click()
-	// 	} else {
-	// 		handleSave()
-	// 	}
-
-
 	const handleSaveClick = () => {
-	// 直接保存，不检查密钥
-	handleSave()}
-
-		
+		if (!isAuth) {
+			keyInputRef.current?.click()
+		} else {
+			handleSave()
+		}
 	}
 
+	// 🔥 修改 handleSave - 不调用 pushSiteContent，直接保存到 localStorage
 	const handleSave = async () => {
 		setIsSaving(true)
 		try {
-			// Calculate removed art images so that we can delete files in repo
-			const originalArtImages = originalData.artImages ?? []
-			const currentArtImages = formData.artImages ?? []
-			const removedArtImages = originalArtImages.filter(orig => !currentArtImages.some(current => current.id === orig.id))
-
-			// Calculate removed background images
-			const originalBackgroundImages = originalData.backgroundImages ?? []
-			const currentBackgroundImages = formData.backgroundImages ?? []
-			const removedBackgroundImages = originalBackgroundImages.filter(orig => !currentBackgroundImages.some(current => current.id === orig.id))
-
-			await pushSiteContent(
+			// 直接保存到 localStorage
+			const saveData = {
 				formData,
-				cardStylesData,
-				faviconItem,
-				avatarItem,
-				artImageUploads,
-				removedArtImages,
-				backgroundImageUploads,
-				removedBackgroundImages,
-				socialButtonImageUploads
-			)
+				cardStyles: cardStylesData,
+				timestamp: Date.now()
+			}
+			localStorage.setItem('siteConfig', JSON.stringify(saveData))
+			console.log('已保存到 localStorage', saveData)
+			
 			setSiteContent(formData)
 			setCardStyles(cardStylesData)
 			updateThemeVariables(formData.theme)
@@ -138,6 +121,7 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 			setBackgroundImageUploads({})
 			setSocialButtonImageUploads({})
 			onClose()
+			toast.success('保存成功')
 		} catch (error: any) {
 			console.error('Failed to save:', error)
 			toast.error(`保存失败: ${error?.message || '未知错误'}`)
@@ -226,8 +210,7 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 		onClose()
 	}
 
-	// const buttonText = isAuth ? '保存' : '导入密钥'
-    const buttonText = '保存'
+	const buttonText = isAuth ? '保存' : '导入密钥'
 
 	const tabs: { id: TabType; label: string }[] = [
 		{ id: 'site', label: '网站设置' },
@@ -304,7 +287,7 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 						/>
 					)}
 					{activeTab === 'color' && <ColorConfig formData={formData} setFormData={setFormData} />}
-					{activeTab === 'layout' && <HomeLayout cardStylesData={cardStylesData} setCardStylesData={setCardStylesData} onClose={onClose} />}
+					{activeTab === 'layout' && <HomeLayout cardStylesData={cardStylesData} setCardStylesData={cardStylesData} onClose={onClose} />}
 				</div>
 			</DialogModal>
 		</>
