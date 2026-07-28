@@ -19,6 +19,10 @@ interface ConfigDialogProps {
 
 type TabType = 'site' | 'color' | 'layout'
 
+// ========== 在这里设置你的固定密码 ==========
+const SAVE_PASSWORD = "ZhiTing123456";
+// ==================================================
+
 export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 	const { isAuth, setPrivateKey } = useAuthStore()
 	const { siteContent, setSiteContent, cardStyles, setCardStyles, regenerateBubbles } = useConfigStore()
@@ -28,7 +32,10 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 	const [originalCardStyles, setOriginalCardStyles] = useState<CardStyles>(cardStyles)
 	const [isSaving, setIsSaving] = useState(false)
 	const [activeTab, setActiveTab] = useState<TabType>('site')
-	const keyInputRef = useRef<HTMLInputElement>(null)
+	// 新增密码输入状态
+	const [inputPassword, setInputPassword] = useState("")
+	const [showPasswordInput, setShowPasswordInput] = useState(false)
+
 	const [faviconItem, setFaviconItem] = useState<FileItem | null>(null)
 	const [avatarItem, setAvatarItem] = useState<FileItem | null>(null)
 	const [artImageUploads, setArtImageUploads] = useState<ArtImageUploads>({})
@@ -49,50 +56,37 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 			setBackgroundImageUploads({})
 			setSocialButtonImageUploads({})
 			setActiveTab('site')
+			// 弹窗打开重置密码输入框
+			setInputPassword("")
+			setShowPasswordInput(false)
 		}
 	}, [open, siteContent, cardStyles])
 
 	useEffect(() => {
 		return () => {
-			// Clean up preview URLs on unmount
-			if (faviconItem?.type === 'file') {
-				URL.revokeObjectURL(faviconItem.previewUrl)
-			}
-			if (avatarItem?.type === 'file') {
-				URL.revokeObjectURL(avatarItem.previewUrl)
-			}
-			Object.values(artImageUploads).forEach(item => {
-				if (item.type === 'file') {
-					URL.revokeObjectURL(item.previewUrl)
-				}
-			})
-			Object.values(backgroundImageUploads).forEach(item => {
-				if (item.type === 'file') {
-					URL.revokeObjectURL(item.previewUrl)
-				}
-			})
-			Object.values(socialButtonImageUploads).forEach(item => {
-				if (item.type === 'file') {
-					URL.revokeObjectURL(item.previewUrl)
-				}
-			})
+			if (faviconItem?.type === 'file') URL.revokeObjectURL(faviconItem.previewUrl)
+			if (avatarItem?.type === 'file') URL.revokeObjectURL(avatarItem.previewUrl)
+			Object.values(artImageUploads).forEach(item => { if (item.type === 'file') URL.revokeObjectURL(item.previewUrl) })
+			Object.values(backgroundImageUploads).forEach(item => { if (item.type === 'file') URL.revokeObjectURL(item.previewUrl) })
+			Object.values(socialButtonImageUploads).forEach(item => { if (item.type === 'file') URL.revokeObjectURL(item.previewUrl) })
 		}
 	}, [faviconItem, avatarItem, artImageUploads, backgroundImageUploads, socialButtonImageUploads])
 
-	const handleChoosePrivateKey = async (file: File) => {
-		try {
-			const text = await file.text()
-			setPrivateKey(text)
-			await handleSave()
-		} catch (error) {
-			console.error('Failed to read private key:', error)
-			toast.error('读取密钥文件失败')
+	// 原读取pem文件逻辑删除，替换为密码校验函数
+	const checkPasswordAndSave = () => {
+		if (inputPassword.trim() !== SAVE_PASSWORD) {
+			toast.error("密码错误，请重新输入")
+			return
 		}
+		// 密码正确，标记已授权并执行保存
+		setPrivateKey("authorized")
+		handleSave()
 	}
 
 	const handleSaveClick = () => {
 		if (!isAuth) {
-			keyInputRef.current?.click()
+			// 未授权时展示密码输入框
+			setShowPasswordInput(true)
 		} else {
 			handleSave()
 		}
@@ -101,12 +95,10 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 	const handleSave = async () => {
 		setIsSaving(true)
 		try {
-			// Calculate removed art images so that we can delete files in repo
 			const originalArtImages = originalData.artImages ?? []
 			const currentArtImages = formData.artImages ?? []
 			const removedArtImages = originalArtImages.filter(orig => !currentArtImages.some(current => current.id === orig.id))
 
-			// Calculate removed background images
 			const originalBackgroundImages = originalData.backgroundImages ?? []
 			const currentBackgroundImages = formData.backgroundImages ?? []
 			const removedBackgroundImages = originalBackgroundImages.filter(orig => !currentBackgroundImages.some(current => current.id === orig.id))
@@ -131,6 +123,7 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 			setBackgroundImageUploads({})
 			setSocialButtonImageUploads({})
 			onClose()
+			toast.success("配置保存成功")
 		} catch (error: any) {
 			console.error('Failed to save:', error)
 			toast.error(`保存失败: ${error?.message || '未知错误'}`)
@@ -140,39 +133,20 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 	}
 
 	const handleCancel = () => {
-		// Clean up preview URLs
-		if (faviconItem?.type === 'file') {
-			URL.revokeObjectURL(faviconItem.previewUrl)
-		}
-		if (avatarItem?.type === 'file') {
-			URL.revokeObjectURL(avatarItem.previewUrl)
-		}
-		Object.values(artImageUploads).forEach(item => {
-			if (item.type === 'file') {
-				URL.revokeObjectURL(item.previewUrl)
-			}
-		})
-		Object.values(backgroundImageUploads).forEach(item => {
-			if (item.type === 'file') {
-				URL.revokeObjectURL(item.previewUrl)
-			}
-		})
-		Object.values(socialButtonImageUploads).forEach(item => {
-			if (item.type === 'file') {
-				URL.revokeObjectURL(item.previewUrl)
-			}
-		})
-		// Restore to the state when dialog was opened
+		if (faviconItem?.type === 'file') URL.revokeObjectURL(faviconItem.previewUrl)
+		if (avatarItem?.type === 'file') URL.revokeObjectURL(avatarItem.previewUrl)
+		Object.values(artImageUploads).forEach(item => { if (item.type === 'file') URL.revokeObjectURL(item.previewUrl) })
+		Object.values(backgroundImageUploads).forEach(item => { if (item.type === 'file') URL.revokeObjectURL(item.previewUrl) })
+		Object.values(socialButtonImageUploads).forEach(item => { if (item.type === 'file') URL.revokeObjectURL(item.previewUrl) })
+
 		setSiteContent(originalData)
 		setCardStyles(originalCardStyles)
 		regenerateBubbles()
-		// Restore document title and meta if they were changed by preview
+
 		if (typeof document !== 'undefined') {
 			document.title = originalData.meta.title
 			const metaDescription = document.querySelector('meta[name="description"]')
-			if (metaDescription) {
-				metaDescription.setAttribute('content', originalData.meta.description)
-			}
+			if (metaDescription) metaDescription.setAttribute('content', originalData.meta.description)
 		}
 		updateThemeVariables(originalData.theme)
 		setFaviconItem(null)
@@ -180,16 +154,15 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 		setArtImageUploads({})
 		setBackgroundImageUploads({})
 		setSocialButtonImageUploads({})
+		setInputPassword("")
+		setShowPasswordInput(false)
 		onClose()
 	}
 
 	const updateThemeVariables = (theme?: SiteContent['theme']) => {
 		if (typeof document === 'undefined' || !theme) return
-
 		const { colorBrand, colorBrandSecondary, colorPrimary, colorSecondary, colorBg, colorBorder, colorCard, colorArticle } = theme
-
 		const root = document.documentElement
-
 		if (colorBrand) root.style.setProperty('--color-brand', colorBrand)
 		if (colorBrandSecondary) root.style.setProperty('--color-brand-secondary', colorBrandSecondary)
 		if (colorPrimary) root.style.setProperty('--color-primary', colorPrimary)
@@ -201,21 +174,15 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 	}
 
 	const handlePreview = () => {
-		console.log('formData', formData)
 		setSiteContent(formData)
 		setCardStyles(cardStylesData)
 		regenerateBubbles()
-
-		// Update document title
 		if (typeof document !== 'undefined') {
 			document.title = formData.meta.title
 			const metaDescription = document.querySelector('meta[name="description"]')
-			if (metaDescription) {
-				metaDescription.setAttribute('content', formData.meta.description)
-			}
+			if (metaDescription) metaDescription.setAttribute('content', formData.meta.description)
 		}
 		updateThemeVariables(formData.theme)
-
 		onClose()
 	}
 
@@ -229,17 +196,7 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 
 	return (
 		<>
-			<input
-				ref={keyInputRef}
-				type='file'
-				accept='.pem'
-				className='hidden'
-				onChange={async e => {
-					const f = e.target.files?.[0]
-					if (f) await handleChoosePrivateKey(f)
-					if (e.currentTarget) e.currentTarget.value = ''
-				}}
-			/>
+			{/* 原隐藏pem文件上传input已完全删除 */}
 
 			<DialogModal open={open} onClose={handleCancel} className='card scrollbar-none max-h-[90vh] min-h-[600px] w-[640px] overflow-y-auto'>
 				<div className='mb-6 flex items-center justify-between'>
@@ -256,7 +213,7 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 							</button>
 						))}
 					</div>
-					<div className='flex gap-3'>
+					<div className='flex gap-3 items-center'>
 						<motion.button
 							whileHover={{ scale: 1.05 }}
 							whileTap={{ scale: 0.95 }}
@@ -277,6 +234,29 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 						</motion.button>
 					</div>
 				</div>
+
+				{/* 新增密码输入弹窗/输入框 */}
+				{showPasswordInput && (
+					<div className='mb-4 p-4 border rounded-lg bg-card'>
+						<p className='mb-2 text-sm text-secondary'>请输入保存密码</p>
+						<div className='flex gap-2'>
+							<input
+								type='password'
+								value={inputPassword}
+								onChange={(e) => setInputPassword(e.target.value)}
+								className='flex-1 px-3 py-2 rounded border bg-bg'
+								placeholder='输入密码'
+								onKeyDown={(e) => e.key === 'Enter' && checkPasswordAndSave()}
+							/>
+							<button
+								onClick={checkPasswordAndSave}
+								className='brand-btn px-4 py-2 text-sm'
+							>
+								确认保存
+							</button>
+						</div>
+					</div>
+				)}
 
 				<div className='min-h-[200px]'>
 					{activeTab === 'site' && (
