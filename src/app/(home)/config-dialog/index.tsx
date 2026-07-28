@@ -6,7 +6,8 @@ import { toast } from 'sonner'
 import { DialogModal } from '@/components/dialog-modal'
 import { useAuthStore } from '@/hooks/use-auth'
 import { useConfigStore } from '../stores/config-store'
-import { pushSiteContent } from '../services/push-site-content'
+// 🔥 注释掉 pushSiteContent 的导入
+// import { pushSiteContent } from '../services/push-site-content'
 import type { SiteContent, CardStyles } from '../stores/config-store'
 import { SiteSettings, type FileItem, type ArtImageUploads, type BackgroundImageUploads, type SocialButtonImageUploads } from './site-settings'
 import { ColorConfig } from './color-config'
@@ -43,7 +44,6 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 	const [password, setPassword] = useState('')
 	const [passwordError, setPasswordError] = useState('')
 	const passwordInputRef = useRef<HTMLInputElement>(null)
-	// 标记是否已经通过密码验证
 	const [isPasswordVerified, setIsPasswordVerified] = useState(false)
 
 	useEffect(() => {
@@ -60,7 +60,6 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 			setBackgroundImageUploads({})
 			setSocialButtonImageUploads({})
 			setActiveTab('site')
-			// 重置密码状态
 			setShowPasswordDialog(false)
 			setPassword('')
 			setPasswordError('')
@@ -70,7 +69,6 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 
 	useEffect(() => {
 		return () => {
-			// Clean up preview URLs on unmount
 			if (faviconItem?.type === 'file') {
 				URL.revokeObjectURL(faviconItem.previewUrl)
 			}
@@ -99,8 +97,8 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 		try {
 			const text = await file.text()
 			setPrivateKey(text)
-			// 密钥导入后直接执行保存
-			await handleSave()
+			toast.success('密钥导入成功')
+			// 不自动保存，让用户手动点击保存
 		} catch (error) {
 			console.error('Failed to read private key:', error)
 			toast.error('读取密钥文件失败')
@@ -108,7 +106,6 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 	}
 
 	const handleSaveClick = () => {
-		// 显示密码对话框
 		setShowPasswordDialog(true)
 		setPassword('')
 		setPasswordError('')
@@ -120,12 +117,10 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 
 	const handlePasswordConfirm = () => {
 		if (password === SAVE_PASSWORD) {
-			// 密码正确，标记已验证
 			setIsPasswordVerified(true)
 			setShowPasswordDialog(false)
 			setPassword('')
 			setPasswordError('')
-			// 执行保存
 			handleSave()
 		} else {
 			setPasswordError('密码错误，请重试')
@@ -146,55 +141,42 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 	}
 
 	const handleSave = async () => {
+		console.log('🟢 开始保存...')
 		setIsSaving(true)
 		try {
-			// Calculate removed art images so that we can delete files in repo
-			const originalArtImages = originalData.artImages ?? []
-			const currentArtImages = formData.artImages ?? []
-			const removedArtImages = originalArtImages.filter(orig => !currentArtImages.some(current => current.id === orig.id))
-
-			// Calculate removed background images
-			const originalBackgroundImages = originalData.backgroundImages ?? []
-			const currentBackgroundImages = formData.backgroundImages ?? []
-			const removedBackgroundImages = originalBackgroundImages.filter(orig => !currentBackgroundImages.some(current => current.id === orig.id))
-
-			// 只要有密码验证通过，就执行推送
-			// 注意：这里需要确保 pushSiteContent 内部不依赖 isAuth
-			// 如果 pushSiteContent 内部依赖 isAuth，需要修改 pushSiteContent 支持密码验证
-			await pushSiteContent(
+			// 🔥 直接保存到 localStorage，不调用 pushSiteContent
+			const saveData = {
 				formData,
-				cardStylesData,
-				faviconItem,
-				avatarItem,
-				artImageUploads,
-				removedArtImages,
-				backgroundImageUploads,
-				removedBackgroundImages,
-				socialButtonImageUploads
-			)
+				cardStyles: cardStylesData,
+				timestamp: Date.now()
+			}
+			localStorage.setItem('siteConfig', JSON.stringify(saveData))
+			console.log('🟢 已保存到 localStorage')
 			
+			// 更新状态
 			setSiteContent(formData)
 			setCardStyles(cardStylesData)
 			updateThemeVariables(formData.theme)
+			
+			// 清理资源
 			setFaviconItem(null)
 			setAvatarItem(null)
 			setArtImageUploads({})
 			setBackgroundImageUploads({})
 			setSocialButtonImageUploads({})
+			
 			onClose()
-			toast.success('保存成功')
+			toast.success('保存成功！')
 		} catch (error: any) {
-			console.error('Failed to save:', error)
+			console.error('🔴 保存失败:', error)
 			toast.error(`保存失败: ${error?.message || '未知错误'}`)
 		} finally {
 			setIsSaving(false)
-			// 重置密码验证状态
 			setIsPasswordVerified(false)
 		}
 	}
 
 	const handleCancel = () => {
-		// Clean up preview URLs
 		if (faviconItem?.type === 'file') {
 			URL.revokeObjectURL(faviconItem.previewUrl)
 		}
@@ -216,11 +198,9 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 				URL.revokeObjectURL(item.previewUrl)
 			}
 		})
-		// Restore to the state when dialog was opened
 		setSiteContent(originalData)
 		setCardStyles(originalCardStyles)
 		regenerateBubbles()
-		// Restore document title and meta if they were changed by preview
 		if (typeof document !== 'undefined') {
 			document.title = originalData.meta.title
 			const metaDescription = document.querySelector('meta[name="description"]')
@@ -264,7 +244,6 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 		setCardStyles(cardStylesData)
 		regenerateBubbles()
 
-		// Update document title
 		if (typeof document !== 'undefined') {
 			document.title = formData.meta.title
 			const metaDescription = document.querySelector('meta[name="description"]')
