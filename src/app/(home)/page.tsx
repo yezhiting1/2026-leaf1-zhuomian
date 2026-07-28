@@ -81,7 +81,7 @@ export default function Home() {
 				{cardStyles.hiCard?.enabled !== false && <HiCard />}
 				{!maxSM && cardStyles.clockCard?.enabled !== false && <ClockCard />}
 				{!maxSM && cardStyles.calendarCard?.enabled !== false && <CalendarCard />}
-				{cardStyles.socialButtons?.enabled !== false && <SocialButtons />}
+				/* {cardStyles.socialButtons?.enabled !== false && <SocialButtons />} */
 				{!maxSM && cardStyles.shareCard?.enabled !== false && <ShareCard />}
 				{cardStyles.articleCard?.enabled !== false && <AritcleCard />}
 				{!maxSM && cardStyles.writeButtons?.enabled !== false && <WriteButtons />}
