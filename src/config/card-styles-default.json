@@ -32,7 +32,15 @@
 		"offsetY": null,
 		"enabled": true
 	},
-	
+	"musicCard": {
+		"width": 293,
+		"height": 66,
+		"offset": 120,
+		"order": 6,
+		"offsetX": null,
+		"offsetY": null,
+		"enabled": true
+	},
 	"socialButtons": {
 		"width": 315,
 		"height": 48,
@@ -57,7 +65,7 @@
 		"offsetY": null,
 		"enabled": true
 	},
-	"musicCard": {
+	"writeButtons": {
 		"height": 42,
 		"width": 180,
 		"order": 8,
