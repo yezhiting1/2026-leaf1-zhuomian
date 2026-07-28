@@ -1,6 +1,7 @@
 import { create } from 'zustand'
-import { clearAllAuthCache, getAuthToken as getToken, hasAuth as checkAuth, getPemFromCache, savePemToCache } from '@/lib/auth'
+import { clearAllAuthCache, getAuthToken as getToken, hasAuth as checkAuth } from '@/lib/auth'
 import { useConfigStore } from '@/app/(home)/stores/config-store'
+
 interface AuthStore {
 	// State
 	isAuth: boolean
@@ -19,10 +20,11 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
 	setPrivateKey: async (key: string) => {
 		set({ isAuth: true, privateKey: key })
-		const { siteContent } = useConfigStore.getState()
-		if (siteContent?.isCachePem) {
-			await savePemToCache(key)
-		}
+		// 🔥 删除 savePemToCache 调用
+		// const { siteContent } = useConfigStore.getState()
+		// if (siteContent?.isCachePem) {
+		// 	await savePemToCache(key)
+		// }
 	},
 
 	clearAuth: () => {
@@ -41,12 +43,14 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 	}
 }))
 
-getPemFromCache().then((key) => {
-	if (key) {
-		useAuthStore.setState({ privateKey: key })
-	}
-})
+// 🔥 删除这两段，因为 getPemFromCache 已经不存在了
+// getPemFromCache().then((key) => {
+// 	if (key) {
+// 		useAuthStore.setState({ privateKey: key })
+// 	}
+// })
 
+// checkAuth 保留
 checkAuth().then((isAuth) => {
 	if (isAuth) {
 		useAuthStore.setState({ isAuth })
