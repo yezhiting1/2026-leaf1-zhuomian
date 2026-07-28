@@ -3,6 +3,7 @@ import Card from '@/components/card'
 import { useConfigStore } from './stores/config-store'
 import { HomeDraggableLayer } from './home-draggable-layer'
 import Link from 'next/link'
+import MusicCard from '@/components/music-card'
 
 function getGreeting() {
 	const hour = new Date().getHours()
@@ -52,7 +53,13 @@ export default function HiCard() {
 				</Link>
 				<h1 className='font-averia mt-3 text-2xl'>
 					{greeting} <br /> I'm <span className='text-linear text-[32px]'>{username}</span> , Nice to <br /> meet you!
+					
 				</h1>
+
+{/* 音乐卡片 */}
+<div className="mt-4">
+    <MusicCard />
+</div>
 			</Card>
 		</HomeDraggableLayer>
 	)
