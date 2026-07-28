@@ -1,253 +1,198 @@
-'use client'
-
-import { useAuthStore } from '@/hooks/use-auth'
-import { KJUR, KEYUTIL } from 'jsrsasign'
+import { toBase64Utf8, getRef, createTree, createCommit, updateRef, createBlob, type TreeItem } from '@/lib/github-client'
+import { getAuthToken } from '@/lib/auth'
+import { GITHUB_CONFIG } from '@/consts'
 import { toast } from 'sonner'
+import { fileToBase64NoPrefix } from '@/lib/file-utils'
+import type { SiteContent, CardStyles } from '../stores/config-store'
+import type { FileItem, ArtImageUploads, SocialButtonImageUploads, BackgroundImageUploads } from '../config-dialog/site-settings'
 
-export const GH_API = 'https://api.github.com'
+type ArtImageConfig = SiteContent['artImages'][number]
+type BackgroundImageConfig = SiteContent['backgroundImages'][number]
 
-function handle401Error(): void {
-    if (typeof sessionStorage === 'undefined') return
-    try {
-        useAuthStore.getState().clearAuth()
-    } catch (error) {
-        console.error('Failed to clear auth cache:', error)
-    }
-}
+export async function pushSiteContent(
+	siteContent: SiteContent,
+	cardStyles: CardStyles,
+	faviconItem?: FileItem | null,
+	avatarItem?: FileItem | null,
+	artImageUploads?: ArtImageUploads,
+	removedArtImages?: ArtImageConfig[],
+	backgroundImageUploads?: BackgroundImageUploads,
+	removedBackgroundImages?: BackgroundImageConfig[],
+	socialButtonImageUploads?: SocialButtonImageUploads
+): Promise<void> {
+	const token = await getAuthToken()
 
-function handle422Error(): void {
-    toast.error('操作太快了，请操作慢一点')
-}
+	toast.info('正在获取分支信息...')
+	const refData = await getRef(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, `heads/${GITHUB_CONFIG.BRANCH}`)
+	const latestCommitSha = refData.sha
 
-export function toBase64Utf8(input: string): string {
-    return btoa(unescape(encodeURIComponent(input)))
-}
+	const commitMessage = `更新站点配置`
 
-export function signAppJwt(appId: string, privateKeyPem: string): string {
-    const now = Math.floor(Date.now() / 1000)
-    const header = { alg: 'RS256', typ: 'JWT' }
-    const payload = { iat: now - 60, exp: now + 8 * 60, iss: appId }
-    const prv = KEYUTIL.getKey(privateKeyPem) as unknown as string
-    return KJUR.jws.JWS.sign('RS256', JSON.stringify(header), JSON.stringify(payload), prv)
-}
+	toast.info('正在准备文件...')
 
-export async function getInstallationId(jwt: string, owner: string, repo: string): Promise<number> {
-    const res = await fetch(`${GH_API}/repos/${owner}/${repo}/installation`, {
-        headers: {
-            Authorization: `Bearer ${jwt}`,
-            Accept: 'application/vnd.github+json',
-            'X-GitHub-Api-Version': '2022-11-28'
-        }
-    })
-    if (res.status === 401) handle401Error()
-    if (res.status === 422) handle422Error()
-    if (!res.ok) throw new Error(`installation lookup failed: ${res.status}`)
-    const data = await res.json()
-    return data.id
-}
+	const treeItems: TreeItem[] = []
 
-export async function createInstallationToken(jwt: string, installationId: number): Promise<string> {
-    const res = await fetch(`${GH_API}/app/installations/${installationId}/access_tokens`, {
-        method: 'POST',
-        headers: {
-            Authorization: `Bearer ${jwt}`,
-            Accept: 'application/vnd.github+json',
-            'X-GitHub-Api-Version': '2022-11-28'
-        }
-    })
-    if (res.status === 401) handle401Error()
-    if (res.status === 422) handle422Error()
-    if (!res.ok) throw new Error(`create token failed: ${res.status}`)
-    const data = await res.json()
-    return data.token as string
-}
+	// Handle favicon upload
+	if (faviconItem?.type === 'file') {
+		toast.info('正在上传 Favicon...')
+		const contentBase64 = await fileToBase64NoPrefix(faviconItem.file)
+		const blobData = await createBlob(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, contentBase64, 'base64')
+		treeItems.push({
+			path: 'public/favicon.png',
+			mode: '100644',
+			type: 'blob',
+			sha: blobData.sha
+		})
+	}
 
-export async function getFileSha(token: string, owner: string, repo: string, path: string, branch: string): Promise<string | undefined> {
-    const res = await fetch(`${GH_API}/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`, {
-        headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/vnd.github+json',
-            'X-GitHub-Api-Version': '2022-11-28'
-        }
-    })
-    if (res.status === 401) handle401Error()
-    if (res.status === 422) handle422Error()
-    if (res.status === 404) return undefined
-    if (!res.ok) throw new Error(`get file sha failed: ${res.status}`)
-    const data = await res.json()
-    return (data && data.sha) || undefined
-}
+	// Handle avatar upload
+	if (avatarItem?.type === 'file') {
+		toast.info('正在上传 Avatar...')
+		const contentBase64 = await fileToBase64NoPrefix(avatarItem.file)
+		const blobData = await createBlob(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, contentBase64, 'base64')
+		treeItems.push({
+			path: 'public/images/avatar.png',
+			mode: '100644',
+			type: 'blob',
+			sha: blobData.sha
+		})
+	}
 
-export async function putFile(token: string, owner: string, repo: string, path: string, contentBase64: string, message: string, branch: string) {
-    const sha = await getFileSha(token, owner, repo, path, branch)
-    const res = await fetch(`${GH_API}/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`, {
-        method: 'PUT',
-        headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/vnd.github+json',
-            'X-GitHub-Api-Version': '2022-11-28',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ message, content: contentBase64, branch, ...(sha ? { sha } : {}) })
-    })
-    if (res.status === 401) handle401Error()
-    if (res.status === 422) handle422Error()
-    if (!res.ok) throw new Error(`put file failed: ${res.status}`)
-    return res.json()
-}
+	// Handle art images upload
+	if (artImageUploads) {
+		for (const [id, item] of Object.entries(artImageUploads)) {
+			if (item.type !== 'file') continue
 
-// Batch commit APIs
+			const artConfig = siteContent.artImages?.find(art => art.id === id)
+			if (!artConfig) continue
 
-export async function getRef(token: string, owner: string, repo: string, ref: string): Promise<{ sha: string }> {
-    const res = await fetch(`${GH_API}/repos/${owner}/${repo}/git/ref/${ref}`, {
-        headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/vnd.github+json',
-            'X-GitHub-Api-Version': '2022-11-28'
-        }
-    })
-    if (res.status === 401) handle401Error()
-    if (res.status === 422) handle422Error()
-    if (!res.ok) throw new Error(`get ref failed: ${res.status}`)
-    const data = await res.json()
-    return { sha: data.object.sha }
-}
+			const normalizedUrlPath = artConfig.url.startsWith('/') ? artConfig.url : `/${artConfig.url}`
+			const path = `public${normalizedUrlPath}`
+			if (!path) continue
 
-export type TreeItem = {
-    path: string
-    mode: '100644' | '100755' | '040000' | '160000' | '120000'
-    type: 'blob' | 'tree' | 'commit'
-    content?: string
-    sha?: string | null
-}
+			toast.info(`正在上传 Art 图片 ${id}...`)
+			const contentBase64 = await fileToBase64NoPrefix(item.file)
+			const blobData = await createBlob(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, contentBase64, 'base64')
+			treeItems.push({
+				path,
+				mode: '100644',
+				type: 'blob',
+				sha: blobData.sha
+			})
+		}
+	}
 
-export async function createTree(token: string, owner: string, repo: string, tree: TreeItem[], baseTree?: string): Promise<{ sha: string }> {
-    const res = await fetch(`${GH_API}/repos/${owner}/${repo}/git/trees`, {
-        method: 'POST',
-        headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/vnd.github+json',
-            'X-GitHub-Api-Version': '2022-11-28',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ tree, base_tree: baseTree })
-    })
-    if (res.status === 401) handle401Error()
-    if (res.status === 422) handle422Error()
-    if (!res.ok) throw new Error(`create tree failed: ${res.status}`)
-    const data = await res.json()
-    return { sha: data.sha }
-}
+	// Handle art images deletion
+	if (removedArtImages && removedArtImages.length > 0) {
+		for (const art of removedArtImages) {
+			const normalizedUrlPath = art.url.startsWith('/') ? art.url : `/${art.url}`
+			const path = `public${normalizedUrlPath}`
+			treeItems.push({
+				path,
+				mode: '100644',
+				type: 'blob',
+				sha: null
+			})
+		}
+	}
 
-export async function createCommit(token: string, owner: string, repo: string, message: string, tree: string, parents: string[]): Promise<{ sha: string }> {
-    const res = await fetch(`${GH_API}/repos/${owner}/${repo}/git/commits`, {
-        method: 'POST',
-        headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/vnd.github+json',
-            'X-GitHub-Api-Version': '2022-11-28',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ message, tree, parents })
-    })
-    if (res.status === 401) handle401Error()
-    if (res.status === 422) handle422Error()
-    if (!res.ok) throw new Error(`create commit failed: ${res.status}`)
-    const data = await res.json()
-    return { sha: data.sha }
-}
+	// Handle background images upload
+	if (backgroundImageUploads) {
+		for (const [id, item] of Object.entries(backgroundImageUploads)) {
+			if (item.type !== 'file') continue
 
-export async function updateRef(token: string, owner: string, repo: string, ref: string, sha: string, force = false): Promise<void> {
-    const res = await fetch(`${GH_API}/repos/${owner}/${repo}/git/refs/${ref}`, {
-        method: 'PATCH',
-        headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/vnd.github+json',
-            'X-GitHub-Api-Version': '2022-11-28',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ sha, force })
-    })
-    if (res.status === 401) handle401Error()
-    if (res.status === 422) handle422Error()
-    if (!res.ok) throw new Error(`update ref failed: ${res.status}`)
-}
+			const bgConfig = siteContent.backgroundImages?.find(bg => bg.id === id)
+			if (!bgConfig) continue
 
-export async function readTextFileFromRepo(token: string, owner: string, repo: string, path: string, ref: string): Promise<string | null> {
-    const res = await fetch(`${GH_API}/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(ref)}`, {
-        headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/vnd.github+json',
-            'X-GitHub-Api-Version': '2022-11-28'
-        }
-    })
-    if (res.status === 401) handle401Error()
-    if (res.status === 422) handle422Error()
-    if (res.status === 404) return null
-    if (!res.ok) throw new Error(`read file failed: ${res.status}`)
-    const data: any = await res.json()
-    if (Array.isArray(data) || !data.content) return null
-    try {
-        return decodeURIComponent(escape(atob(data.content)))
-    } catch {
-        return atob(data.content)
-    }
-}
+			if (!bgConfig.url.startsWith('/images/background/')) continue
 
-export async function listRepoFilesRecursive(token: string, owner: string, repo: string, path: string, ref: string): Promise<string[]> {
-    async function fetchPath(targetPath: string): Promise<string[]> {
-        const res = await fetch(`${GH_API}/repos/${owner}/${repo}/contents/${encodeURIComponent(targetPath)}?ref=${encodeURIComponent(ref)}`, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-                Accept: 'application/vnd.github+json',
-                'X-GitHub-Api-Version': '2022-11-28'
-            }
-        })
-        if (res.status === 401) handle401Error()
-        if (res.status === 422) handle422Error()
-        if (res.status === 404) return []
-        if (!res.ok) throw new Error(`read directory failed: ${res.status}`)
-        const data: any = await res.json()
-        if (Array.isArray(data)) {
-            const files: string[] = []
-            for (const item of data) {
-                if (item.type === 'file') {
-                    files.push(item.path)
-                } else if (item.type === 'dir') {
-                    const nested = await fetchPath(item.path)
-                    files.push(...nested)
-                }
-            }
-            return files
-        }
-        if (data?.type === 'file') return [data.path]
-        if (data?.type === 'dir') return fetchPath(data.path)
-        return []
-    }
+			const normalizedUrlPath = bgConfig.url.startsWith('/') ? bgConfig.url : `/${bgConfig.url}`
+			const path = `public${normalizedUrlPath}`
+			if (!path) continue
 
-    return fetchPath(path)
-}
+			toast.info(`正在上传背景图片 ${id}...`)
+			const contentBase64 = await fileToBase64NoPrefix(item.file)
+			const blobData = await createBlob(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, contentBase64, 'base64')
+			treeItems.push({
+				path,
+				mode: '100644',
+				type: 'blob',
+				sha: blobData.sha
+			})
+		}
+	}
 
-export async function createBlob(
-    token: string,
-    owner: string,
-    repo: string,
-    content: string,
-    encoding: 'utf-8' | 'base64' = 'base64'
-): Promise<{ sha: string }> {
-    const res = await fetch(`${GH_API}/repos/${owner}/${repo}/git/blobs`, {
-        method: 'POST',
-        headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: 'application/vnd.github+json',
-            'X-GitHub-Api-Version': '2022-11-28',
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ content, encoding })
-    })
-    if (res.status === 401) handle401Error()
-    if (res.status === 422) handle422Error()
-    if (!res.ok) throw new Error(`create blob failed: ${res.status}`)
-    const data = await res.json()
-    return { sha: data.sha }
+	// Handle background images deletion
+	if (removedBackgroundImages && removedBackgroundImages.length > 0) {
+		for (const bg of removedBackgroundImages) {
+			if (!bg.url.startsWith('/images/background/')) continue
+
+			const normalizedUrlPath = bg.url.startsWith('/') ? bg.url : `/${bg.url}`
+			const path = `public${normalizedUrlPath}`
+			treeItems.push({
+				path,
+				mode: '100644',
+				type: 'blob',
+				sha: null
+			})
+		}
+	}
+
+	// Handle social button images upload
+	if (socialButtonImageUploads) {
+		for (const [buttonId, item] of Object.entries(socialButtonImageUploads)) {
+			if (item.type !== 'file') continue
+
+			const button = siteContent.socialButtons?.find(btn => btn.id === buttonId)
+			if (!button) continue
+
+			if (!button.value.startsWith('/images/social-buttons/')) continue
+
+			const normalizedUrlPath = button.value.startsWith('/') ? button.value : `/${button.value}`
+			const path = `public${normalizedUrlPath}`
+			if (!path) continue
+
+			toast.info(`正在上传社交按钮图片 ${buttonId}...`)
+			const contentBase64 = await fileToBase64NoPrefix(item.file)
+			const blobData = await createBlob(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, contentBase64, 'base64')
+			treeItems.push({
+				path,
+				mode: '100644',
+				type: 'blob',
+				sha: blobData.sha
+			})
+		}
+	}
+
+	// Handle site content JSON
+	const siteContentJson = JSON.stringify(siteContent, null, '\t')
+	const siteContentBlob = await createBlob(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, toBase64Utf8(siteContentJson), 'base64')
+	treeItems.push({
+		path: 'src/config/site-content.json',
+		mode: '100644',
+		type: 'blob',
+		sha: siteContentBlob.sha
+	})
+
+	// Handle card styles JSON
+	const cardStylesJson = JSON.stringify(cardStyles, null, '\t')
+	const cardStylesBlob = await createBlob(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, toBase64Utf8(cardStylesJson), 'base64')
+	treeItems.push({
+		path: 'src/config/card-styles.json',
+		mode: '100644',
+		type: 'blob',
+		sha: cardStylesBlob.sha
+	})
+
+	toast.info('正在创建文件树...')
+	const treeData = await createTree(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, treeItems, latestCommitSha)
+
+	toast.info('正在创建提交...')
+	const commitData = await createCommit(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, commitMessage, treeData.sha, [latestCommitSha])
+
+	toast.info('正在更新分支...')
+	// 🔥 修改：refs/heads/main 而不是 heads/main
+	await updateRef(token, GITHUB_CONFIG.OWNER, GITHUB_CONFIG.REPO, `refs/heads/${GITHUB_CONFIG.BRANCH}`, commitData.sha)
+
+	toast.success('保存成功！')
 }
