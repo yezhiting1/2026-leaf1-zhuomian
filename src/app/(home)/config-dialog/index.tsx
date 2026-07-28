@@ -20,7 +20,7 @@ interface ConfigDialogProps {
 type TabType = 'site' | 'color' | 'layout'
 
 // ========== 在这里设置你的固定密码 ==========
-const SAVE_PASSWORD = "ZhiTing123456";
+const SAVE_PASSWORD = "Zhiting";
 // ==================================================
 
 export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
