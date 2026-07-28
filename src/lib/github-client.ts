@@ -98,8 +98,9 @@ export async function putFile(token: string, owner: string, repo: string, path: 
 
 // Batch commit APIs
 
+// 🔥 修改：不要 encodeURIComponent
 export async function getRef(token: string, owner: string, repo: string, ref: string): Promise<{ sha: string }> {
-	const res = await fetch(`${GH_API}/repos/${owner}/${repo}/git/ref/${encodeURIComponent(ref)}`, {
+	const res = await fetch(`${GH_API}/repos/${owner}/${repo}/git/ref/${ref}`, {
 		headers: {
 			Authorization: `Bearer ${token}`,
 			Accept: 'application/vnd.github+json',
