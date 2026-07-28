@@ -3,7 +3,7 @@ import Card from '@/components/card'
 import { useConfigStore } from './stores/config-store'
 import { HomeDraggableLayer } from './home-draggable-layer'
 import Link from 'next/link'
-import MusicCard from '@/components/music-card'
+
 
 function getGreeting() {
 	const hour = new Date().getHours()
@@ -56,10 +56,7 @@ export default function HiCard() {
 					
 				</h1>
 
-{/* 音乐卡片 */}
-<div className="mt-4">
-    <MusicCard />
-</div>
+
 			</Card>
 		</HomeDraggableLayer>
 	)
