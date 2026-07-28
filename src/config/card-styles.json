@@ -35,7 +35,7 @@
 	"musicCard": {
    "width": 360,
 	"height": 320,
-    "order": 1.5,
+    "order": 6,
     "offsetX":null,
     "offsetY":null,
     "enabled":  false
