@@ -5,7 +5,7 @@
 		"username": "Zhiting"
 	},
 	"theme": {
-		"colorBrand": "#2fcbe7",
+		"colorBrand": "#1271DC",
 		"colorPrimary": "#5B423F",
 		"colorSecondary": "#8b7667",
 		"colorBrandSecondary": "#eec25e",
@@ -15,9 +15,12 @@
 		"colorArticle": "#ffffffcc"
 	},
 	"backgroundColors": [
-		"#f7da3987",
-		"#8fdbe9",
-		"#fffef8"
+		"#A868E2",
+		"#15E4AB",
+		"#6B17CF",
+		"#6C3EDD",
+		"#4C62DB",
+		"#CD75E1"
 	],
 	"artImages": [
 		{
