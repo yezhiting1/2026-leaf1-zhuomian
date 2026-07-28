@@ -6,8 +6,6 @@ import { toast } from 'sonner'
 import { DialogModal } from '@/components/dialog-modal'
 import { useAuthStore } from '@/hooks/use-auth'
 import { useConfigStore } from '../stores/config-store'
-// 🔥 注释掉 pushSiteContent 的导入
-// import { pushSiteContent } from '../services/push-site-content'
 import type { SiteContent, CardStyles } from '../stores/config-store'
 import { SiteSettings, type FileItem, type ArtImageUploads, type BackgroundImageUploads, type SocialButtonImageUploads } from './site-settings'
 import { ColorConfig } from './color-config'
@@ -21,7 +19,6 @@ interface ConfigDialogProps {
 type TabType = 'site' | 'color' | 'layout'
 
 export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
-	const { isAuth, setPrivateKey } = useAuthStore()
 	const { siteContent, setSiteContent, cardStyles, setCardStyles, regenerateBubbles } = useConfigStore()
 	const [formData, setFormData] = useState<SiteContent>(siteContent)
 	const [cardStylesData, setCardStylesData] = useState<CardStyles>(cardStyles)
@@ -29,7 +26,6 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 	const [originalCardStyles, setOriginalCardStyles] = useState<CardStyles>(cardStyles)
 	const [isSaving, setIsSaving] = useState(false)
 	const [activeTab, setActiveTab] = useState<TabType>('site')
-	const keyInputRef = useRef<HTMLInputElement>(null)
 	const [faviconItem, setFaviconItem] = useState<FileItem | null>(null)
 	const [avatarItem, setAvatarItem] = useState<FileItem | null>(null)
 	const [artImageUploads, setArtImageUploads] = useState<ArtImageUploads>({})
@@ -55,7 +51,6 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 
 	useEffect(() => {
 		return () => {
-			// Clean up preview URLs on unmount
 			if (faviconItem?.type === 'file') {
 				URL.revokeObjectURL(faviconItem.previewUrl)
 			}
@@ -80,37 +75,16 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 		}
 	}, [faviconItem, avatarItem, artImageUploads, backgroundImageUploads, socialButtonImageUploads])
 
-	const handleChoosePrivateKey = async (file: File) => {
-		try {
-			const text = await file.text()
-			setPrivateKey(text)
-			await handleSave()
-		} catch (error) {
-			console.error('Failed to read private key:', error)
-			toast.error('读取密钥文件失败')
-		}
-	}
-
-	const handleSaveClick = () => {
-		if (!isAuth) {
-			keyInputRef.current?.click()
-		} else {
-			handleSave()
-		}
-	}
-
-	// 🔥 修改 handleSave - 不调用 pushSiteContent，直接保存到 localStorage
 	const handleSave = async () => {
 		setIsSaving(true)
 		try {
-			// 直接保存到 localStorage
+			// 保存到 localStorage
 			const saveData = {
 				formData,
 				cardStyles: cardStylesData,
 				timestamp: Date.now()
 			}
 			localStorage.setItem('siteConfig', JSON.stringify(saveData))
-			console.log('已保存到 localStorage', saveData)
 			
 			setSiteContent(formData)
 			setCardStyles(cardStylesData)
@@ -131,7 +105,6 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 	}
 
 	const handleCancel = () => {
-		// Clean up preview URLs
 		if (faviconItem?.type === 'file') {
 			URL.revokeObjectURL(faviconItem.previewUrl)
 		}
@@ -153,11 +126,9 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 				URL.revokeObjectURL(item.previewUrl)
 			}
 		})
-		// Restore to the state when dialog was opened
 		setSiteContent(originalData)
 		setCardStyles(originalCardStyles)
 		regenerateBubbles()
-		// Restore document title and meta if they were changed by preview
 		if (typeof document !== 'undefined') {
 			document.title = originalData.meta.title
 			const metaDescription = document.querySelector('meta[name="description"]')
@@ -197,7 +168,6 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 		setCardStyles(cardStylesData)
 		regenerateBubbles()
 
-		// Update document title
 		if (typeof document !== 'undefined') {
 			document.title = formData.meta.title
 			const metaDescription = document.querySelector('meta[name="description"]')
@@ -210,8 +180,6 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 		onClose()
 	}
 
-	const buttonText = isAuth ? '保存' : '导入密钥'
-
 	const tabs: { id: TabType; label: string }[] = [
 		{ id: 'site', label: '网站设置' },
 		{ id: 'color', label: '色彩配置' },
@@ -220,18 +188,6 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 
 	return (
 		<>
-			<input
-				ref={keyInputRef}
-				type='file'
-				accept='.pem'
-				className='hidden'
-				onChange={async e => {
-					const f = e.target.files?.[0]
-					if (f) await handleChoosePrivateKey(f)
-					if (e.currentTarget) e.currentTarget.value = ''
-				}}
-			/>
-
 			<DialogModal open={open} onClose={handleCancel} className='card scrollbar-none max-h-[90vh] min-h-[600px] w-[640px] overflow-y-auto'>
 				<div className='mb-6 flex items-center justify-between'>
 					<div className='flex gap-1'>
@@ -263,8 +219,8 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 							className='bg-card rounded-xl border px-6 py-2 text-sm'>
 							取消
 						</motion.button>
-						<motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={handleSaveClick} disabled={isSaving} className='brand-btn px-6'>
-							{isSaving ? '保存中...' : buttonText}
+						<motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={handleSave} disabled={isSaving} className='brand-btn px-6'>
+							{isSaving ? '保存中...' : '保存'}
 						</motion.button>
 					</div>
 				</div>
