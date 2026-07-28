@@ -9,7 +9,7 @@
 	},
 	"hiCard": {
 		"width": 360,
-		"height": 320,
+		"height": 288,
 		"order": 1,
 		"offsetX": null,
 		"offsetY": null,
@@ -32,23 +32,23 @@
 		"offsetY": null,
 		"enabled": true
 	},
-	"SocialButtons":{
-   "width": 360,
-	"height": 320,
-    "order": 6.5,
-    "offsetX":null,
-    "offsetY":null,
-    "enabled": true
-},
 	"musicCard": {
-   "width": 360,
-	"height": 320,
-    "order": 6,
-    "offsetX":null,
-    "offsetY":null,
-    "enabled": true
-},
-	
+		"width": 293,
+		"height": 66,
+		"offset": 120,
+		"order": 6,
+		"offsetX": null,
+		"offsetY": null,
+		"enabled": true
+	},
+	"socialButtons": {
+		"width": 315,
+		"height": 48,
+		"order": 6,
+		"offsetX": null,
+		"offsetY": null,
+		"enabled": true
+	},
 	"shareCard": {
 		"width": 200,
 		"height": 180,
