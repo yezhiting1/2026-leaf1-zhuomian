@@ -6,8 +6,7 @@ import { toast } from 'sonner'
 import { DialogModal } from '@/components/dialog-modal'
 import { useAuthStore } from '@/hooks/use-auth'
 import { useConfigStore } from '../stores/config-store'
-// 🔥 注释掉 pushSiteContent 的导入
-// import { pushSiteContent } from '../services/push-site-content'
+import { pushSiteContent } from '../services/push-site-content'
 import type { SiteContent, CardStyles } from '../stores/config-store'
 import { SiteSettings, type FileItem, type ArtImageUploads, type BackgroundImageUploads, type SocialButtonImageUploads } from './site-settings'
 import { ColorConfig } from './color-config'
@@ -19,9 +18,6 @@ interface ConfigDialogProps {
 }
 
 type TabType = 'site' | 'color' | 'layout'
-
-// 固定的密码
-const SAVE_PASSWORD = 'yzt'
 
 export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 	const { isAuth, setPrivateKey } = useAuthStore()
@@ -38,13 +34,6 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 	const [artImageUploads, setArtImageUploads] = useState<ArtImageUploads>({})
 	const [backgroundImageUploads, setBackgroundImageUploads] = useState<BackgroundImageUploads>({})
 	const [socialButtonImageUploads, setSocialButtonImageUploads] = useState<SocialButtonImageUploads>({})
-	
-	// 密码验证相关
-	const [showPasswordDialog, setShowPasswordDialog] = useState(false)
-	const [password, setPassword] = useState('')
-	const [passwordError, setPasswordError] = useState('')
-	const passwordInputRef = useRef<HTMLInputElement>(null)
-	const [isPasswordVerified, setIsPasswordVerified] = useState(false)
 
 	useEffect(() => {
 		if (open) {
@@ -60,15 +49,12 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 			setBackgroundImageUploads({})
 			setSocialButtonImageUploads({})
 			setActiveTab('site')
-			setShowPasswordDialog(false)
-			setPassword('')
-			setPasswordError('')
-			setIsPasswordVerified(false)
 		}
 	}, [open, siteContent, cardStyles])
 
 	useEffect(() => {
 		return () => {
+			// Clean up preview URLs on unmount
 			if (faviconItem?.type === 'file') {
 				URL.revokeObjectURL(faviconItem.previewUrl)
 			}
@@ -97,86 +83,71 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 		try {
 			const text = await file.text()
 			setPrivateKey(text)
-			toast.success('密钥导入成功')
-			// 不自动保存，让用户手动点击保存
+			await handleSave()
 		} catch (error) {
 			console.error('Failed to read private key:', error)
 			toast.error('读取密钥文件失败')
 		}
 	}
 
+	// const handleSaveClick = () => {
+	// 	if (!isAuth) {
+	// 		keyInputRef.current?.click()
+	// 	} else {
+	// 		handleSave()
+	// 	}
+
+
 	const handleSaveClick = () => {
-		setShowPasswordDialog(true)
-		setPassword('')
-		setPasswordError('')
-		setIsPasswordVerified(false)
-		setTimeout(() => {
-			passwordInputRef.current?.focus()
-		}, 100)
-	}
+	// 直接保存，不检查密钥
+	handleSave()}
 
-	const handlePasswordConfirm = () => {
-		if (password === SAVE_PASSWORD) {
-			setIsPasswordVerified(true)
-			setShowPasswordDialog(false)
-			setPassword('')
-			setPasswordError('')
-			handleSave()
-		} else {
-			setPasswordError('密码错误，请重试')
-			setPassword('')
-			passwordInputRef.current?.focus()
-		}
-	}
-
-	const handlePasswordKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-		if (e.key === 'Enter') {
-			handlePasswordConfirm()
-		}
-		if (e.key === 'Escape') {
-			setShowPasswordDialog(false)
-			setPassword('')
-			setPasswordError('')
-		}
+		
 	}
 
 	const handleSave = async () => {
-		console.log('🟢 开始保存...')
 		setIsSaving(true)
 		try {
-			// 🔥 直接保存到 localStorage，不调用 pushSiteContent
-			const saveData = {
+			// Calculate removed art images so that we can delete files in repo
+			const originalArtImages = originalData.artImages ?? []
+			const currentArtImages = formData.artImages ?? []
+			const removedArtImages = originalArtImages.filter(orig => !currentArtImages.some(current => current.id === orig.id))
+
+			// Calculate removed background images
+			const originalBackgroundImages = originalData.backgroundImages ?? []
+			const currentBackgroundImages = formData.backgroundImages ?? []
+			const removedBackgroundImages = originalBackgroundImages.filter(orig => !currentBackgroundImages.some(current => current.id === orig.id))
+
+			await pushSiteContent(
 				formData,
-				cardStyles: cardStylesData,
-				timestamp: Date.now()
-			}
-			localStorage.setItem('siteConfig', JSON.stringify(saveData))
-			console.log('🟢 已保存到 localStorage')
-			
-			// 更新状态
+				cardStylesData,
+				faviconItem,
+				avatarItem,
+				artImageUploads,
+				removedArtImages,
+				backgroundImageUploads,
+				removedBackgroundImages,
+				socialButtonImageUploads
+			)
 			setSiteContent(formData)
 			setCardStyles(cardStylesData)
 			updateThemeVariables(formData.theme)
-			
-			// 清理资源
 			setFaviconItem(null)
 			setAvatarItem(null)
 			setArtImageUploads({})
 			setBackgroundImageUploads({})
 			setSocialButtonImageUploads({})
-			
 			onClose()
-			toast.success('保存成功！')
 		} catch (error: any) {
-			console.error('🔴 保存失败:', error)
+			console.error('Failed to save:', error)
 			toast.error(`保存失败: ${error?.message || '未知错误'}`)
 		} finally {
 			setIsSaving(false)
-			setIsPasswordVerified(false)
 		}
 	}
 
 	const handleCancel = () => {
+		// Clean up preview URLs
 		if (faviconItem?.type === 'file') {
 			URL.revokeObjectURL(faviconItem.previewUrl)
 		}
@@ -198,9 +169,11 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 				URL.revokeObjectURL(item.previewUrl)
 			}
 		})
+		// Restore to the state when dialog was opened
 		setSiteContent(originalData)
 		setCardStyles(originalCardStyles)
 		regenerateBubbles()
+		// Restore document title and meta if they were changed by preview
 		if (typeof document !== 'undefined') {
 			document.title = originalData.meta.title
 			const metaDescription = document.querySelector('meta[name="description"]')
@@ -214,10 +187,6 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 		setArtImageUploads({})
 		setBackgroundImageUploads({})
 		setSocialButtonImageUploads({})
-		setShowPasswordDialog(false)
-		setPassword('')
-		setPasswordError('')
-		setIsPasswordVerified(false)
 		onClose()
 	}
 
@@ -244,6 +213,7 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 		setCardStyles(cardStylesData)
 		regenerateBubbles()
 
+		// Update document title
 		if (typeof document !== 'undefined') {
 			document.title = formData.meta.title
 			const metaDescription = document.querySelector('meta[name="description"]')
@@ -256,7 +226,7 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 		onClose()
 	}
 
-	const buttonText = '保存'
+	const buttonText = isAuth ? '保存' : '导入密钥'
 
 	const tabs: { id: TabType; label: string }[] = [
 		{ id: 'site', label: '网站设置' },
@@ -336,48 +306,6 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 					{activeTab === 'layout' && <HomeLayout cardStylesData={cardStylesData} setCardStylesData={setCardStylesData} onClose={onClose} />}
 				</div>
 			</DialogModal>
-
-			{/* 密码验证弹窗 */}
-			{showPasswordDialog && (
-				<div className='fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm'>
-					<div className='card w-[400px] p-6'>
-						<h3 className='mb-4 text-lg font-semibold'>请输入保存密码</h3>
-						<div className='mb-4'>
-							<input
-								ref={passwordInputRef}
-								type='password'
-								value={password}
-								onChange={(e) => setPassword(e.target.value)}
-								onKeyDown={handlePasswordKeyDown}
-								placeholder='请输入密码'
-								className='w-full rounded-lg border border-border bg-card px-4 py-2 text-sm outline-none transition-colors focus:border-brand'
-								autoFocus
-							/>
-							{passwordError && (
-								<p className='mt-2 text-sm text-red-500'>{passwordError}</p>
-							)}
-						</div>
-						<div className='flex justify-end gap-3'>
-							<button
-								onClick={() => {
-									setShowPasswordDialog(false)
-									setPassword('')
-									setPasswordError('')
-								}}
-								className='rounded-lg border border-border px-4 py-2 text-sm transition-colors hover:bg-secondary/10'
-							>
-								取消
-							</button>
-							<button
-								onClick={handlePasswordConfirm}
-								className='brand-btn px-6 py-2 text-sm'
-							>
-								确认保存
-							</button>
-						</div>
-					</div>
-				</div>
-			)}
 		</>
 	)
 }
