@@ -282,7 +282,7 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 							取消
 						</motion.button>
 						<motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={handleSaveClick} disabled={isSaving} className='brand-btn px-6'>
-							{isSaving ? '保存中...' : '保存'}
+							{isSaving ? '保存中...' : '保存→预览→验证'}
 						</motion.button>
 					</div>
 				</div>
