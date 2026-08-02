@@ -311,7 +311,8 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 
 			{/* 🔥 密码弹窗 */}
 			{showPasswordDialog && (
-				<div className='fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm'>
+				
+				<div className='fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm'>
 					<div className='card w-[400px] p-6'>
 						<h3 className='mb-4 text-lg font-semibold'>请输入保存密码</h3>
 						<div className='mb-4'>
