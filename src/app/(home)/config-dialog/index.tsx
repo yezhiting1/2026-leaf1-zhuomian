@@ -265,16 +265,7 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 							</button>
 						))}
 					</div>
-					{/* 按钮顺序：保存 → 预览 → 验证 */}
 					<div className='flex gap-3'>
-						<motion.button
-							whileHover={{ scale: 1.05 }}
-							whileTap={{ scale: 0.95 }}
-							onClick={handleSaveClick}
-							disabled={isSaving}
-							className='brand-btn px-6'>
-							{isSaving ? '保存中...' : '保存'}
-						</motion.button>
 						<motion.button
 							whileHover={{ scale: 1.05 }}
 							whileTap={{ scale: 0.95 }}
@@ -288,7 +279,10 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 							onClick={handleCancel}
 							disabled={isSaving}
 							className='bg-card rounded-xl border px-6 py-2 text-sm'>
-							验证
+							取消
+						</motion.button>
+						<motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={handleSaveClick} disabled={isSaving} className='brand-btn px-6'>
+							{isSaving ? '保存中...' : '保存→预览→密码'}
 						</motion.button>
 					</div>
 				</div>
@@ -315,8 +309,9 @@ export default function ConfigDialog({ open, onClose }: ConfigDialogProps) {
 				</div>
 			</DialogModal>
 
-			{/* 🔥 密码弹窗【已经在外层，不会被主弹窗遮挡】 */}
+			{/* 🔥 密码弹窗 */}
 			{showPasswordDialog && (
+				
 				<div className='fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm'>
 					<div className='card w-[400px] p-6'>
 						<h3 className='mb-4 text-lg font-semibold'>请输入保存密码</h3>
