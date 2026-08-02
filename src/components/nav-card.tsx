@@ -85,7 +85,7 @@ const list = [
 		icon: WebsiteOutlineSVG,
 		iconActive: WebsiteFilledSVG,
 		label: '我的OS',
-		href: 'https://blog5.yztcf.de5.net/',
+		href: 'https://os.yztcf.de5.net/',
 		external: true
 	 }
 ]
